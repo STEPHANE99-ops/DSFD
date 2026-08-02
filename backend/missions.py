@@ -183,15 +183,17 @@ def _template_email_mission(nom_inspecteur: str, mission: dict) -> str:
     """
 
 
-def _notifier_inspecteurs(mission: dict, identifiants_inspecteurs: List[str]):
+def _notifier_inspecteurs(mission: dict, noms_inspecteurs: List[str]):
     """Cherche les inspecteurs dans la table utilisateurs et envoie les notifications.
 
     FIX : la recherche se fait désormais en priorité par EMAIL (identifiant
     unique et fiable envoyé par le frontend) et est restreinte aux comptes
     dont la colonne `role` vaut 'inspecteur'. On conserve une recherche de
     repli par nom/prénom pour les anciennes missions enregistrées avec un nom.
+    Le paramètre garde le nom `noms_inspecteurs` pour rester compatible avec
+    l'appel existant dans creer_mission().
     """
-    for identifiant in identifiants_inspecteurs:
+    for identifiant in noms_inspecteurs:
         identifiant = (identifiant or "").strip()
         if not identifiant:
             continue
