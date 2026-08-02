@@ -8,10 +8,34 @@ const API_URL = "https://dsfd-2.onrender.com";  // sans slash final
 
 /* ════════════════════════════════════════════
    AUTH — requireAuth + logout + affichage
+   FIX : requireAuth() revalide désormais la session
+   contre le backend (token JWT) au lieu de faire
+   simplement confiance à ce qui traîne dans
+   localStorage. Cela évite qu'un rôle périmé ou
+   qu'une session d'un autre utilisateur reste
+   affichée par erreur.
 ════════════════════════════════════════════ */
-function requireAuth() {
-  const user = JSON.parse(localStorage.getItem("utilisateur") || "null");
-  if (!user) {
+async function requireAuth() {
+  const token = localStorage.getItem("token");
+  const user  = JSON.parse(localStorage.getItem("utilisateur") || "null");
+
+  if (!token || !user) {
+    window.location.href = "index.html";
+    return;
+  }
+
+  try {
+    const res = await fetch(`${API_URL}/auth/me`, {
+      headers: { "Authorization": `Bearer ${token}` }
+    });
+    if (!res.ok) throw new Error("session invalide");
+    const data = await res.json();
+    // FIX : on écrase toujours avec les données fraîches renvoyées par
+    // le serveur (rôle, nom, prénoms à jour).
+    localStorage.setItem("utilisateur", JSON.stringify(data.utilisateur));
+  } catch {
+    localStorage.removeItem("utilisateur");
+    localStorage.removeItem("token");
     window.location.href = "index.html";
   }
 }
@@ -46,8 +70,10 @@ function estChefMission() {
   return getUserRole() === "chef_mission";
 }
 
+// FIX : logout() supprime désormais aussi le token de session.
 function logout() {
   localStorage.removeItem("utilisateur");
+  localStorage.removeItem("token");
   window.location.href = "index.html";
 }
 
@@ -116,6 +142,8 @@ if (signupForm) {
 
 /* ════════════════════════════════════════════
    CONNEXION
+   FIX : on stocke désormais aussi le token JWT
+   renvoyé par /connexion, en plus des infos user.
 ════════════════════════════════════════════ */
 const loginForm = document.getElementById("loginForm");
 if (loginForm) {
@@ -139,6 +167,7 @@ if (loginForm) {
         message.style.color = "green";
         message.textContent = "✅ Connexion réussie ! Redirection...";
         localStorage.setItem("utilisateur", JSON.stringify(resultat.utilisateur));
+        localStorage.setItem("token", resultat.token);
         setTimeout(() => { window.location.href = "dashboard.html"; }, 1500);
       } else {
         message.style.color = "red";

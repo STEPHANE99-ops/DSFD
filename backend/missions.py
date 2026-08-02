@@ -6,6 +6,13 @@ import smtplib
 import os
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
+import jwt
+from datetime import datetime, timedelta, timezone
+
+# FIX : on réutilise le secret et l'algorithme définis dans utilisateurs.py
+# pour que les tokens émis ici soient vérifiables partout, ainsi que la
+# fonction qui crée un token de session complet une fois l'accès validé.
+from utilisateurs import SECRET_KEY, ALGORITHM, creer_token_session
 
 
 router = APIRouter(prefix="/missions", tags=["Missions"])
@@ -56,9 +63,9 @@ class MissionModel(BaseModel):
     @field_validator("date_mission")
     @classmethod
     def date_valide(cls, v):
-        from datetime import datetime
+        from datetime import datetime as dt
         try:
-            datetime.strptime(v, "%Y-%m-%d")
+            dt.strptime(v, "%Y-%m-%d")
         except ValueError:
             raise ValueError("Format de date invalide. Utilisez YYYY-MM-DD.")
         return v
@@ -83,6 +90,11 @@ class MissionUpdateModel(BaseModel):
     personnel:              Optional[List[Dict[str, Any]]] = None
     indicateurs_financiers: Optional[Dict[str, Any]]        = None
     suivi_recommandations:  Optional[List[Dict[str, Any]]]  = None
+
+
+# FIX : modèle pour la vérification du lien d'accès envoyé par mail
+class AccesMissionModel(BaseModel):
+    token: str
 
 
 # ── Envoi d'email ──────────────────────────────────────
@@ -110,7 +122,24 @@ def _envoyer_email(destinataire: str, sujet: str, corps_html: str):
     except Exception as e:
         print(f"❌ Erreur envoi email: {e}")
 
-def _template_email_mission(nom_inspecteur: str, mission: dict) -> str:
+
+# ── FIX : génération du token d'accès mission ──────────
+# Ce token est propre à UN email d'inspecteur et UNE mission précise.
+# Il est signé avec le même secret que les sessions normales, mais porte
+# un "type" différent ("mission_access") pour ne jamais être confondu
+# avec un token de session classique. Il expire après 14 jours.
+def _creer_token_acces_mission(email: str, mission_id: int) -> str:
+    payload = {
+        "sub":        email,
+        "mission_id": mission_id,
+        "type":       "mission_access",
+        "iat":        datetime.now(timezone.utc),
+        "exp":        datetime.now(timezone.utc) + timedelta(days=14),
+    }
+    return jwt.encode(payload, SECRET_KEY, algorithm=ALGORITHM)
+
+
+def _template_email_mission(nom_inspecteur: str, mission: dict, token_acces: str) -> str:
     """Génère le corps HTML de l'email de notification de mission."""
     mission_id  = mission.get("id", "")
     sfd         = mission.get("sfd", "")
@@ -118,7 +147,10 @@ def _template_email_mission(nom_inspecteur: str, mission: dict) -> str:
     date_mission= mission.get("date_mission", "")
     chef        = mission.get("chef_mission", "")
     type_ctrl   = mission.get("type_controle", "global").upper()
-    lien        = f"{FRONTEND_URL}/nouvelle_mission.html?id={mission_id}"
+    # FIX : le lien porte désormais un token prouvant l'identité du
+    # destinataire — plus de dépendance à "qui est connecté sur ce
+    # navigateur en ce moment".
+    lien        = f"{FRONTEND_URL}/nouvelle_mission.html?id={mission_id}&token={token_acces}"
 
     return f"""
     <!DOCTYPE html>
@@ -167,6 +199,10 @@ def _template_email_mission(nom_inspecteur: str, mission: dict) -> str:
             Ou copiez ce lien dans votre navigateur :<br/>
             <a href="{lien}" style="color:#F97316">{lien}</a>
           </p>
+
+          <p style="font-size:11px;color:#CBD5E1;text-align:center;margin-top:18px">
+            Ce lien est personnel et valable 14 jours.
+          </p>
         </div>
 
         <!-- Pied de page -->
@@ -192,6 +228,9 @@ def _notifier_inspecteurs(mission: dict, noms_inspecteurs: List[str]):
     repli par nom/prénom pour les anciennes missions enregistrées avec un nom.
     Le paramètre garde le nom `noms_inspecteurs` pour rester compatible avec
     l'appel existant dans creer_mission().
+
+    FIX : chaque email envoyé embarque désormais un token d'accès propre à
+    l'inspecteur et à la mission (voir _creer_token_acces_mission).
     """
     for identifiant in noms_inspecteurs:
         identifiant = (identifiant or "").strip()
@@ -238,7 +277,8 @@ def _notifier_inspecteurs(mission: dict, noms_inspecteurs: List[str]):
             prenom = utilisateur.get("prenoms") or utilisateur.get("nom") or "Inspecteur"
 
             if email:
-                corps = _template_email_mission(prenom, mission)
+                token_acces = _creer_token_acces_mission(email, mission.get("id"))
+                corps = _template_email_mission(prenom, mission, token_acces)
                 _envoyer_email(
                     destinataire = email,
                     sujet        = f"[DSFD] Nouvelle mission — {mission.get('sfd', '')} ({mission.get('reference', '')})",
@@ -306,7 +346,7 @@ def creer_mission(data: MissionModel):
     mission = res.data[0]
 
     # Envoyer les emails en arrière-plan (ne bloque pas la réponse)
-    
+
     _notifier_inspecteurs(
         mission          = mission,
         noms_inspecteurs = data.inspecteurs
@@ -394,3 +434,46 @@ def supprimer_mission(id: int):
     if not res.data:
         raise HTTPException(404, f"Mission #{id} introuvable.")
     return {"message": "✅ Mission supprimée.", "mission": res.data[0]}
+
+
+# ── FIX : vérification du lien d'accès reçu par mail ────
+# Appelée par le frontend (nouvelle_mission.js) dès qu'un paramètre
+# ?token=... est présent dans l'URL. Si le token est valide, non expiré,
+# et correspond bien à un inspecteur existant, on renvoie un token de
+# session complet qui remplace toute session précédente (par exemple
+# celle du chef de mission qui aurait été restée connecté sur ce poste).
+@router.post("/verifier-acces")
+def verifier_acces_mission(data: AccesMissionModel):
+    try:
+        payload = jwt.decode(data.token, SECRET_KEY, algorithms=[ALGORITHM])
+    except jwt.ExpiredSignatureError:
+        raise HTTPException(401, "Ce lien a expiré. Demandez au chef de mission de vous le renvoyer.")
+    except jwt.InvalidTokenError:
+        raise HTTPException(401, "Lien d'accès invalide.")
+
+    if payload.get("type") != "mission_access":
+        raise HTTPException(401, "Lien d'accès invalide.")
+
+    email       = payload.get("sub")
+    mission_id  = payload.get("mission_id")
+
+    res = (
+        supabase.table("utilisateurs")
+        .select("id, nom, prenoms, role, email")
+        .eq("email", email)
+        .eq("role", "inspecteur")
+        .execute()
+    )
+    if not res.data:
+        raise HTTPException(404, "Inspecteur introuvable ou rôle modifié depuis l'envoi du lien.")
+    u = res.data[0]
+
+    mission = supabase.table("missions").select("id").eq("id", mission_id).execute()
+    if not mission.data:
+        raise HTTPException(404, "Mission introuvable.")
+
+    return {
+        "utilisateur": u,
+        "token":       creer_token_session(u),
+        "mission_id":  mission_id,
+    }

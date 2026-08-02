@@ -2963,7 +2963,40 @@ function buildGeneric(bloc, g) {
    INIT
 ════════════════════════════════════════════ */
 
+async function gererAccesParLien() {
+  const params = new URLSearchParams(window.location.search);
+  const accessToken = params.get('token');
+  if (!accessToken) return;
+
+  try {
+    const res = await fetch(`${API_URL}/missions/verifier-acces`, {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify({ token: accessToken })
+    });
+    const data = await res.json();
+
+    if (res.ok) {
+      localStorage.setItem('utilisateur', JSON.stringify(data.utilisateur));
+      localStorage.setItem('token', data.token);
+
+      params.delete('token');
+      const nouvelleUrl = `${window.location.pathname}?${params.toString()}`;
+      window.history.replaceState({}, '', nouvelleUrl);
+    } else {
+      alert('❌ ' + (data.detail || 'Lien invalide ou expiré.'));
+      localStorage.removeItem('utilisateur');
+      localStorage.removeItem('token');
+      window.location.href = 'index.html';
+    }
+  } catch {
+    alert('❌ Serveur inaccessible.');
+  }
+}
+
 document.addEventListener('DOMContentLoaded', async () => {
+  await gererAccesParLien();   // FIX : doit s'exécuter avant tout le reste
+  await requireAuth();         // FIX : bloque l'accès si personne n'est identifié
   await chargerListeInspecteurs();
   const id = new URLSearchParams(window.location.search).get('id');
 

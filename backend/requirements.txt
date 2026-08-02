@@ -8,3 +8,4 @@ pydantic[email]
 python-dotenv
 python-docx
 resend
+pyjwt
