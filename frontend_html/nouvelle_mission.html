@@ -524,40 +524,33 @@
   <script src="js/app.js"></script>
 
   <script>
-    // Onglets données SFD
-    function switchTab(tabId, el) {
-      document.querySelectorAll('.donnees-sfd-panel').forEach(p => p.classList.remove('active'));
-      document.querySelectorAll('.donnees-sfd-tab').forEach(t => t.classList.remove('active'));
-      document.getElementById(tabId).classList.add('active');
-      el.classList.add('active');
-    }
+  function switchTab(tabId, el) {
+    document.querySelectorAll('.donnees-sfd-panel').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.donnees-sfd-tab').forEach(t => t.classList.remove('active'));
+    document.getElementById(tabId).classList.add('active');
+    el.classList.add('active');
+  }
 
-    // Injecter les formulaires réservés au chef de mission (page principale)
-    document.addEventListener('DOMContentLoaded', function () {
-      const divSFD = document.getElementById('infos-generales-sfd');
-      if (divSFD && typeof buildInfosGeneralesSFD === 'function')
-        divSFD.innerHTML = buildInfosGeneralesSFD();
+  document.addEventListener('DOMContentLoaded', function () {
+    const divSFD = document.getElementById('infos-generales-sfd');
+    if (divSFD && typeof buildInfosGeneralesSFD === 'function')
+      divSFD.innerHTML = buildInfosGeneralesSFD();
 
-      const divIndicateurs = document.getElementById('indicateurs-activites');
-      if (divIndicateurs && typeof buildIndicateursActivites === 'function')
-        divIndicateurs.innerHTML = buildIndicateursActivites();
+    const divIndicateurs = document.getElementById('indicateurs-activites');
+    if (divIndicateurs && typeof buildIndicateursActivites === 'function')
+      divIndicateurs.innerHTML = buildIndicateursActivites();
 
-      const divSuiviRecomm = document.getElementById('suivi-recomm-precedentes');
-      if (divSuiviRecomm && typeof buildSuiviRecommandationsPrecedentes === 'function')
-        divSuiviRecomm.innerHTML = buildSuiviRecommandationsPrecedentes();
-    });
-  </script>
+    const divSuiviRecomm = document.getElementById('suivi-recomm-precedentes');
+    if (divSuiviRecomm && typeof buildSuiviRecommandationsPrecedentes === 'function')
+      divSuiviRecomm.innerHTML = buildSuiviRecommandationsPrecedentes();
 
-  <script>
-    function switchTab(tabId, el) { /* ... inchangé ... */ }
-
-    document.addEventListener('DOMContentLoaded', function () {
-      // ... injections buildInfosGeneralesSFD(), etc. inchangées ...
-
-      // ── FIX : réappliquer les restrictions une fois les formulaires injectés ──
-      if (typeof appliquerRestrictionsRole === 'function') appliquerRestrictionsRole();
-    });
-  </script>
+    // ── FIX : appliquer aussi ici, pour griser immédiatement le contenu
+    // des onglets SFD/Indicateurs dès leur injection, sans attendre le
+    // chargement asynchrone de la mission (qui rappelle la fonction
+    // une seconde fois de toute façon — sans risque grâce au garde-fou).
+    if (typeof appliquerRestrictionsRole === 'function') appliquerRestrictionsRole();
+  });
+</script>
 
 </body>
 

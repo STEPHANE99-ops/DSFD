@@ -71,6 +71,9 @@ const BLOCS = [
 
 const completed = new Set();
 
+// FIX : cache des données déjà saisies pour chaque volet (clé = volet_code) 
+window._voletsCache = window._voletsCache || {};
+
 /* ════════════════════════════════════════════
    RENDU GRILLE
 ════════════════════════════════════════════ */
@@ -132,6 +135,13 @@ function openBloc(i) {
   document.getElementById('overlay').classList.add('open');
   document.body.style.overflow = 'hidden';
   attachHandlers();
+
+
+  // ── FIX : restaurer les données déjà saisies pour ce volet, si elles existent ──
+  const donneesSauvegardees = window._voletsCache && window._voletsCache[b.id];
+  if (donneesSauvegardees && typeof restaurerDonneesDrawer === 'function') {
+    restaurerDonneesDrawer(donneesSauvegardees);
+  }
 }
 
 function closeDrawer(e) {
@@ -3010,16 +3020,26 @@ document.addEventListener('DOMContentLoaded', async () => {
       renderGrid();
     }
   } else {
+    window._voletsCache = {};
     addInspecteur();
     renderGrid();
   }
+
+  // ── FIX : appliquer les restrictions APRÈS que tout le contenu
+  // dynamique (lignes d'inspecteurs recréées, volets, etc.) soit en
+  // place — sinon les éléments recréés après l'appel restent actifs.
+  if (typeof appliquerRestrictionsRole === 'function') appliquerRestrictionsRole();
 });
 
 async function chargerVoletsExistants(missionId) {
   try {
     const res = await fetch(`${API_URL}/volets/?mission_id=${missionId}`);
     const data = await res.json();
+    window._voletsCache = {};
     (data.volets || []).forEach(v => {
+      // ── FIX : on garde les données du volet en cache pour pouvoir
+      // restaurer le formulaire quand on le rouvre ──
+      window._voletsCache[v.volet_code] = v.data || null;
       if (v.est_valide) completed.add(v.volet_code);
     });
     const typeVal = document.getElementById('g-type').value;
@@ -3463,6 +3483,13 @@ function openCustomBloc(b) {
   document.getElementById('overlay').classList.add('open');
   document.body.style.overflow = 'hidden';
   attachHandlers();
+
+
+  // ── FIX : restaurer les données déjà saisies pour ce volet, si elles existent ──
+  const donneesSauvegardees = window._voletsCache && window._voletsCache[b.id];
+  if (donneesSauvegardees && typeof restaurerDonneesDrawer === 'function') {
+    restaurerDonneesDrawer(donneesSauvegardees);
+  }
 }
 
 /* ════════════════════════════════════════════
@@ -4012,37 +4039,37 @@ function buildCameliSynthese(g) {
                       la grille des volets de contrôle
 ════════════════════════════════════════════ */
 function appliquerRestrictionsRole() {
-  if (typeof estChefMission !== 'function' || estChefMission()) return; // rien à faire pour le chef de mission
+  if (typeof estChefMission !== 'function' || estChefMission()) return;
 
-  // Zones à verrouiller : infos générales + onglets de données (Infos SFD, etc.)
   const zonesVerrouillees = [
-    document.querySelector('.info-card'),      // Infos générales de la mission
-    document.querySelector('.donnees-sfd-card') // Onglets SFD / Indicateurs & Suivi / etc.
+    document.querySelector('.info-card'),
+    document.querySelector('.donnees-sfd-card')
   ];
 
   zonesVerrouillees.forEach(zone => {
     if (!zone) return;
     zone.querySelectorAll('input, select, textarea, button').forEach(el => {
-      // On ne désactive pas les boutons de navigation entre onglets (switchTab)
       if (el.tagName === 'BUTTON' && el.classList.contains('donnees-sfd-tab')) return;
       el.disabled = true;
     });
     zone.style.opacity = '0.6';
     zone.style.pointerEvents = zone.classList.contains('donnees-sfd-card') ? 'auto' : 'none';
-    // Sur donnees-sfd-card on garde la navigation d'onglets cliquable, mais les champs sont disabled ci-dessus
   });
 
-  // Masquer le bouton "Enregistrer" (réservé au chef de mission) —
-  // l'inspecteur valide uniquement ses volets un par un via "Valider ce volet"
   const btnEnregistrer = document.querySelector('.action-bar .btn-outline[onclick="enregistrerMission()"]');
   if (btnEnregistrer) btnEnregistrer.style.display = 'none';
 
-  // Bandeau d'information pour l'inspecteur
-  const header = document.querySelector('.page-header');
-  if (header) {
-    const bandeau = document.createElement('div');
-    bandeau.style.cssText = 'background:#FEF3C7;border:1.5px solid #FDE68A;color:#92400E;padding:10px 16px;border-radius:8px;font-size:12.5px;font-weight:600;margin-top:12px;display:flex;align-items:center;gap:8px';
-    bandeau.innerHTML = '<i class="fas fa-lock"></i> Mode inspecteur — seuls les volets de contrôle ci-dessous sont modifiables. Les autres informations ont été renseignées par le chef de mission.';
-    header.insertAdjacentElement('afterend', bandeau);
+  // ── FIX : garde-fou pour ne jamais insérer le bandeau deux fois,
+  // puisque cette fonction est désormais appelée à plusieurs moments
+  // (avant ET après le chargement asynchrone des données de mission).
+  if (!document.getElementById('bandeau-mode-inspecteur')) {
+    const header = document.querySelector('.page-header');
+    if (header) {
+      const bandeau = document.createElement('div');
+      bandeau.id = 'bandeau-mode-inspecteur';
+      bandeau.style.cssText = 'background:#FEF3C7;border:1.5px solid #FDE68A;color:#92400E;padding:10px 16px;border-radius:8px;font-size:12.5px;font-weight:600;margin-top:12px;display:flex;align-items:center;gap:8px';
+      bandeau.innerHTML = '<i class="fas fa-lock"></i> Mode inspecteur — seuls les volets de contrôle ci-dessous sont modifiables. Les autres informations ont été renseignées par le chef de mission.';
+      header.insertAdjacentElement('afterend', bandeau);
+    }
   }
 }

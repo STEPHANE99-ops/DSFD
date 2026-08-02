@@ -5,6 +5,173 @@
    ================================================ */
 
 /* ════════════════════════════════════════════
+   FIX — RESTAURATION GÉNÉRIQUE DES FORMULAIRES
+   Principe : au lieu d'essayer de deviner la
+   sémantique de chaque champ (fragile, incomplet),
+   on capture TOUS les champs du drawer dans l'ordre
+   du DOM, plus le nombre de lignes des tableaux
+   extensibles ("+ Ajouter une ligne"). À la
+   restauration, on reconstruit le bon nombre de
+   lignes puis on réinjecte les valeurs dans le même
+   ordre. Ainsi, plus aucune donnée ne disparaît.
+════════════════════════════════════════════ */
+
+// Tableaux/listes extensibles dont la dernière ligne (ou les 2 dernières)
+// est une ligne "Total" à ne jamais compter comme ligne de saisie.
+const GROWABLE_TOTAL_ROW_EXCLUDE = {
+  'tbl-synth-organes': 1, // Table 20 — Synthèse prêts par organe
+  'tbl-gros-risques':  1, // Table 22 — Gros risques
+};
+
+// Retrouve le bouton "+ Ajouter une ligne / une annexe" associé à un
+// tableau ou une liste, qu'il soit son voisin direct ou que le tableau
+// soit encapsulé dans un simple wrapper <div style="overflow-x:auto">.
+function trouverBoutonAjout(container) {
+  let btn = container.nextElementSibling;
+  if (btn && btn.tagName === 'BUTTON' && btn.classList.contains('add-btn')) return btn;
+
+  const parent = container.parentElement;
+  if (parent && parent.tagName === 'DIV' && !parent.id) {
+    btn = parent.nextElementSibling;
+    if (btn && btn.tagName === 'BUTTON' && btn.classList.contains('add-btn')) return btn;
+  }
+  return null;
+}
+
+// Liste tous les conteneurs extensibles présents dans le drawer,
+// avec leur bouton d'ajout associé.
+function getGrowableContainers(root) {
+  const out = [];
+  root.querySelectorAll('table[id], div[id]').forEach(el => {
+    const btn = trouverBoutonAjout(el);
+    if (btn) out.push({ el, btn });
+  });
+  return out;
+}
+
+// Nombre de lignes de saisie actuelles d'un conteneur extensible
+// (hors ligne(s) "Total" éventuelle(s)).
+function getRowCount(container) {
+  const exclude = GROWABLE_TOTAL_ROW_EXCLUDE[container.id] || 0;
+  let rows;
+  if (container.tagName === 'TABLE') {
+    const tbody = container.querySelector('tbody');
+    rows = tbody ? tbody.children.length : 0;
+  } else {
+    rows = container.children.length; // ex: .ann-list
+  }
+  return Math.max(0, rows - exclude);
+}
+
+// Capture l'état complet du formulaire : nombre de lignes de chaque
+// tableau extensible + valeur/état de chaque champ, dans l'ordre du DOM.
+function snapshotFormulaire(drawer) {
+  if (!drawer) return null;
+
+  const rowCounts = {};
+  getGrowableContainers(drawer).forEach(({ el }) => {
+    rowCounts[el.id] = getRowCount(el);
+  });
+
+  const champs = [];
+  drawer.querySelectorAll('input, select, textarea').forEach(el => {
+    if (el.type === 'radio' || el.type === 'checkbox') {
+      champs.push({ t: 'bool', v: el.checked });
+    } else if (el.type === 'file') {
+      champs.push({ t: 'skip' }); // les fichiers ne sont pas restaurables
+    } else {
+      champs.push({ t: 'val', v: el.value });
+    }
+  });
+
+  // Boutons "Lacune Oui/Non" : ce ne sont pas des <input>, il faut
+  // capturer leur état à part.
+  const lacunes = [];
+  drawer.querySelectorAll('.lacune-wrap').forEach(wrap => {
+    const btns = wrap.querySelectorAll('.lacune-btn');
+    if (btns[0]?.classList.contains('oui'))      lacunes.push('oui');
+    else if (btns[1]?.classList.contains('non')) lacunes.push('non');
+    else                                          lacunes.push(null);
+  });
+
+  return { rowCounts, champs, lacunes };
+}
+
+// Recalcule les éléments visuels et les totaux qui dépendent de valeurs
+// restaurées (arrière-plans des niveaux de risque, pastilles radio,
+// totaux du volet Crédit, TEG, CAMELI...).
+function rafraichirEtatsVisuels(drawer) {
+  drawer.querySelectorAll('.ctrl-table input[type=radio]:checked').forEach(r => {
+    const tr = r.closest('tr');
+    if (tr) {
+      tr.style.background =
+        r.value === 'eleve' ? '#FEF2F2' :
+        r.value === 'moyen' ? '#FFFBEB' : '#F0FDF4';
+    }
+  });
+
+  drawer.querySelectorAll('.radio-pill input:checked').forEach(r => {
+    r.closest('.radio-pill')?.classList.add('on');
+  });
+
+  if (typeof calcTotauxEpargnants === 'function') calcTotauxEpargnants();
+  if (typeof calcPAR === 'function') calcPAR();
+  if (typeof calcTotauxDirigeants === 'function') calcTotauxDirigeants();
+  if (typeof calcTauxPerte === 'function') calcTauxPerte();
+
+  if (typeof checkTEG === 'function') {
+    drawer.querySelectorAll('#tbody-salaries tr').forEach(tr => {
+      const tegInput = tr.querySelectorAll('input')[4];
+      if (tegInput && tegInput.value) checkTEG(tegInput);
+    });
+  }
+
+  if (typeof calcCameli === 'function' && typeof CAMELI_PILIERS !== 'undefined') {
+    Object.keys(CAMELI_PILIERS).forEach(code => {
+      if (document.getElementById('score_' + code)) calcCameli(code);
+    });
+  }
+}
+
+// Restaure un snapshot générique dans le drawer actuellement affiché.
+function restaurerSnapshot(drawer, snap) {
+  if (!drawer || !snap) return;
+
+  // 1) Étendre les tableaux/listes au nombre de lignes sauvegardées
+  getGrowableContainers(drawer).forEach(({ el, btn }) => {
+    const target = (snap.rowCounts || {})[el.id] || 0;
+    let guard = 0;
+    while (getRowCount(el) < target && guard < 500) {
+      btn.click();
+      guard++;
+    }
+  });
+
+  // 2) Réinjecter les valeurs, dans le même ordre DOM qu'à la sauvegarde
+  const champs = snap.champs || [];
+  drawer.querySelectorAll('input, select, textarea').forEach((el, i) => {
+    const c = champs[i];
+    if (!c) return;
+    if (c.t === 'bool')      el.checked = !!c.v;
+    else if (c.t === 'val')  el.value   = c.v ?? '';
+    // 'skip' → fichiers, on ne touche pas
+  });
+
+  // 3) Boutons "Lacune"
+  const lacunes = snap.lacunes || [];
+  drawer.querySelectorAll('.lacune-wrap').forEach((wrap, i) => {
+    const state = lacunes[i];
+    const btns = wrap.querySelectorAll('.lacune-btn');
+    btns.forEach(b => b.classList.remove('oui', 'non'));
+    if (state === 'oui' && btns[0]) btns[0].classList.add('oui');
+    if (state === 'non' && btns[1]) btns[1].classList.add('non');
+  });
+
+  // 4) Recalculs et styles dépendants
+  rafraichirEtatsVisuels(drawer);
+}
+
+/* ════════════════════════════════════════════
    COLLECTE DES DONNÉES DU DRAWER
 ════════════════════════════════════════════ */
 
@@ -15,29 +182,13 @@ function collecterDonneesDrawer(blocId) {
   const data = {
     bloc_id:     blocId,
     timestamp:   new Date().toISOString(),
-
-    // Niveaux de risque (radio buttons ctrl_table)
     niveaux_risque: {},
-
-    // Evolution depuis dernière inspection
     evolution: null,
-
-    // Commentaires de sous-section (textareas), restent sur la plateforme
     commentaires: [],
-
-    // Tables d'activités (paraphes + lacunes + commentaires)
     activites: [],
-
-    // Tables de suivis
     suivis: [],
-
-    // Constats et recommandations
     constats_recommandations: [],
-
-    // Références
     references: [],
-
-    // Champs libres (inputs divers)
     champs_libres: {},
   };
 
@@ -66,16 +217,14 @@ function collecterDonneesDrawer(blocId) {
     }
   });
 
-  // ── Commentaires de sous-section pour la plateforme ──
-  // Le commentaire général (X.0), lui, est collecté séparément (id "comm-general-*")
-  // et n'est PAS inclus ici pour éviter les doublons.
+  // ── Commentaires de sous-section ──
   drawer.querySelectorAll('.form-group-full textarea, textarea[placeholder*="rapport"], textarea[placeholder*="Synthèse"]').forEach(ta => {
-    if (ta.id && ta.id.startsWith('comm-general-')) return; // exclu : géré séparément
+    if (ta.id && ta.id.startsWith('comm-general-')) return;
     const val = ta.value.trim();
     if (val) data.commentaires.push(val);
   });
 
-  // ── Suivis (dyn-table id commençant par "suivi") ──
+  // ── Suivis ──
   drawer.querySelectorAll('table[id^="suivi"]').forEach(tbl => {
     tbl.querySelectorAll('tbody tr').forEach(tr => {
       const cells = tr.querySelectorAll('input, textarea');
@@ -122,17 +271,14 @@ function collecterDonneesDrawer(blocId) {
     data.cameli_scores = window._cameliScores;
   }
 
-  // ── FIX : Tables spécifiques au volet Crédit (Tables 15 à 24) ──
-  // collecterTablesCrédit() est définie dans credit_tables.js mais n'était
-  // jusqu'ici jamais appelée : les données saisies dans les tableaux gros
-  // épargnants, ressources, production de prêts, portefeuille PAR, prêts
-  // dirigeants/personnel, gros risques, crédits en perte et prêts salariés
-  // n'étaient donc jamais envoyées à l'API ni transmises au générateur de
-  // rapport. On les fusionne ici dans "data" pour que sauvegarderVolet()
-  // les inclue dans le payload envoyé à POST /volets/.
+  // ── Tables spécifiques au volet Crédit (Tables 15 à 24) ──
   if (blocId === 'cred' && typeof collecterTablesCrédit === 'function') {
     Object.assign(data, collecterTablesCrédit());
   }
+
+  // ── FIX : capture générique de TOUS les champs du formulaire, pour
+  // permettre une restauration fidèle à la réouverture du volet.
+  data._snapshot = snapshotFormulaire(drawer);
 
   return data;
 }
@@ -150,8 +296,6 @@ async function sauvegarderVolet(bloc) {
 
   const donnees = collecterDonneesDrawer(bloc.id);
 
-  // Commentaire général (X.0), destiné à être injecté dans le rapport Word.
-  // Calculé et attaché à bloc.commentaire_general par nouvelle_mission.js (validerBloc)
   const commentaireGeneral = bloc.commentaire_general || '';
   donnees.commentaire_general = commentaireGeneral;
 
@@ -172,6 +316,11 @@ async function sauvegarderVolet(bloc) {
 
     const res = await response.json();
     if (response.ok) {
+      // ── FIX : on met à jour le cache local immédiatement, pour que
+      // rouvrir le même volet dans la foulée affiche bien les dernières
+      // données, sans attendre un rechargement complet de la page.
+      window._voletsCache = window._voletsCache || {};
+      window._voletsCache[bloc.id] = donnees;
       return true;
     } else {
       console.error('Erreur sauvegarde volet:', res.detail);
@@ -186,7 +335,7 @@ async function sauvegarderVolet(bloc) {
 }
 
 /* ════════════════════════════════════════════
-   CHARGER UN VOLET EXISTANT
+   CHARGER UN VOLET EXISTANT (usage ponctuel)
 ════════════════════════════════════════════ */
 
 async function chargerVolet(missionId, voletCode) {
@@ -209,7 +358,17 @@ function restaurerDonneesDrawer(savedData) {
   const drawer = document.getElementById('drawer-body');
   if (!drawer) return;
 
-  // Restaurer niveaux de risque
+  // ── FIX : méthode générique — restaure absolument tout ce qui a été
+  // saisi (tableaux dynamiques compris), à partir du snapshot capturé
+  // lors de la sauvegarde.
+  if (savedData._snapshot) {
+    restaurerSnapshot(drawer, savedData._snapshot);
+    return;
+  }
+
+  // ── Ancienne méthode, conservée uniquement pour les volets sauvegardés
+  // AVANT ce correctif (ils n'ont pas de _snapshot). Elle ne restaure
+  // qu'une partie des champs.
   if (savedData.niveaux_risque) {
     drawer.querySelectorAll('.ctrl-table tbody tr').forEach(tr => {
       const label = tr.querySelector('td:first-child')?.textContent?.trim();
@@ -225,7 +384,6 @@ function restaurerDonneesDrawer(savedData) {
     });
   }
 
-  // Restaurer évolution
   if (savedData.evolution) {
     const evolRadio = drawer.querySelector(`input[value="${savedData.evolution}"]`);
     if (evolRadio) {
@@ -234,7 +392,6 @@ function restaurerDonneesDrawer(savedData) {
     }
   }
 
-  // Restaurer commentaires de sous-section (le commentaire général est restauré à part)
   if (savedData.commentaires?.length) {
     const textareas = Array.from(drawer.querySelectorAll('.form-group-full textarea'))
       .filter(ta => !(ta.id && ta.id.startsWith('comm-general-')));
@@ -243,13 +400,11 @@ function restaurerDonneesDrawer(savedData) {
     });
   }
 
-  // Restaurer le commentaire général (X.0)
   if (savedData.commentaire_general) {
     const generalEl = drawer.querySelector('textarea[id^="comm-general-"]');
     if (generalEl) generalEl.value = savedData.commentaire_general;
   }
 
-  // Restaurer réviseur et date
   if (savedData.champs_libres) {
     if (savedData.champs_libres.reviseur) {
       const reviseurEl = drawer.querySelector('input[placeholder*="réviseur"], input[placeholder*="Réviseur"]');
@@ -261,7 +416,6 @@ function restaurerDonneesDrawer(savedData) {
     }
   }
 
-  // Restaurer références
   if (savedData.references?.length) {
     const refInputs = drawer.querySelectorAll('input[placeholder*="Référence"], input[placeholder*="BCEAO"]');
     savedData.references.forEach((val, i) => {
