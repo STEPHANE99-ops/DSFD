@@ -3286,7 +3286,9 @@ document.addEventListener('click', function(e) {
 /* ════════════════════════════════════════════
    INSPECTEURS MULTIPLES
 ════════════════════════════════════════════ */
-let inspCount = 1;
+    // FIX : démarre à 0 pour que le premier inspecteur ajouté porte le n° 1
+    // (addInspecteur() incrémente avant l'affichage).
+    let inspCount = 0;
 
 async function chargerListeInspecteurs() {
   try {
@@ -3302,9 +3304,15 @@ function addInspecteur() {
   inspCount++;
   const list = document.getElementById('inspecteurs-list');
 
-  const options = (window._listeInspecteurs || [])
-    .map(u => `<option value="${u.nom} ${u.prenom || ''}".trim()>${u.nom} ${u.prenom || ''} — ${u.email}</option>`)
-    .join('');
+      const options = (window._listeInspecteurs || [])
+        .map(u => {
+          // FIX : le backend renvoie « prenoms » (et non « prenom »),
+          // et la valeur de l'option doit être nettoyée AVANT d'être insérée
+          // dans le HTML — l'ancien code affichait littéralement `".trim()`.
+          const nomComplet = `${u.nom} ${u.prenoms || ''}`.trim();
+          return `<option value="${nomComplet}">${nomComplet} — ${u.email}</option>`;
+        })
+        .join('');
 
   const div = document.createElement('div');
   div.className = 'inspecteur-row';
@@ -3329,11 +3337,14 @@ function removeInspecteur(btn) {
   inspCount = document.querySelectorAll('#inspecteurs-list .inspecteur-row').length;
 }
 
-function getInspecteurs() {
-  return Array.from(
-    document.querySelectorAll('#inspecteurs-list select')
-  ).map(s => s.value.trim()).filter(Boolean);
-}
+    function getInspecteurs() {
+      // FIX : selon le contexte, une ligne d'inspecteur peut être un <select>
+      // (création par le chef de mission) ou un <input> (mission rechargée
+      // depuis le lien reçu par mail). On lit donc les deux types de champs.
+      return Array.from(
+        document.querySelectorAll('#inspecteurs-list select, #inspecteurs-list input')
+      ).map(s => s.value.trim()).filter(Boolean);
+    }
 
 /* ════════════════════════════════════════════
    TYPE DE CONTRÔLE → affichage volets
@@ -4039,25 +4050,26 @@ function buildCameliSynthese(g) {
                       la grille des volets de contrôle
 ════════════════════════════════════════════ */
 function appliquerRestrictionsRole() {
-  if (typeof estChefMission !== 'function' || estChefMission()) return;
+      if (typeof estChefMission !== 'function' || estChefMission()) return;
 
-  const zonesVerrouillees = [
-    document.querySelector('.info-card'),
-    document.querySelector('.donnees-sfd-card')
-  ];
+      // FIX : pour l'inspecteur, on grise UNIQUEMENT la carte
+      // « Nouvelle mission de contrôle » (.info-card). La carte
+      // « Infos SFD / Indicateurs » (.donnees-sfd-card) et les volets
+      // restent entièrement modifiables : l'inspecteur doit pouvoir
+      // remplir tous les autres champs.
+      const zone = document.querySelector('.info-card');
+      if (zone) {
+        zone.querySelectorAll('input, select, textarea, button').forEach(el => {
+          el.disabled = true;
+        });
+        zone.style.opacity = '0.6';
+        zone.style.pointerEvents = 'none';
+      }
 
-  zonesVerrouillees.forEach(zone => {
-    if (!zone) return;
-    zone.querySelectorAll('input, select, textarea, button').forEach(el => {
-      if (el.tagName === 'BUTTON' && el.classList.contains('donnees-sfd-tab')) return;
-      el.disabled = true;
-    });
-    zone.style.opacity = '0.6';
-    zone.style.pointerEvents = zone.classList.contains('donnees-sfd-card') ? 'auto' : 'none';
-  });
-
-  const btnEnregistrer = document.querySelector('.action-bar .btn-outline[onclick="enregistrerMission()"]');
-  if (btnEnregistrer) btnEnregistrer.style.display = 'none';
+      // FIX : on NE masque PLUS le bouton « Enregistrer » — l'inspecteur en a
+      // besoin pour sauvegarder les informations qu'il complète (Infos SFD,
+      // indicateurs, etc.). Les champs grisés conservent leur valeur et sont
+      // renvoyés correctement au backend même désactivés.
 
   // ── FIX : garde-fou pour ne jamais insérer le bandeau deux fois,
   // puisque cette fonction est désormais appelée à plusieurs moments
