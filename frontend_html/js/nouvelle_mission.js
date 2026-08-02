@@ -1499,7 +1499,7 @@ function buildEpargne(bloc, g) {
   `;
 }
 
-/* ════════════════════════════════════════════
+/* ═══════════════���════════════════════════════
    BUILDER — Finance et Comptabilité (Index 6)
 ════════════════════════════════════════════ */
 function buildFinance(bloc, g) {
@@ -2597,7 +2597,7 @@ function buildControleInterne(bloc, g) {
       <table class="dyn-table" id="const-${s.id}">
         <thead><tr><th style="width:70px">Point</th><th>Constats</th><th>Recommandations</th></tr></thead>
         <tbody><tr>
-          <td><input type="text" placeholder="Réf…"/></td>
+          <td><input type="text" placeholder="Réf��"/></td>
           <td><textarea rows="2" placeholder="Décrivez le constat…"></textarea></td>
           <td><textarea rows="2" placeholder="Recommandation…"></textarea></td>
         </tr></tbody>
@@ -3306,11 +3306,14 @@ function addInspecteur() {
 
       const options = (window._listeInspecteurs || [])
         .map(u => {
-          // FIX : le backend renvoie « prenoms » (et non « prenom »),
-          // et la valeur de l'option doit être nettoyée AVANT d'être insérée
-          // dans le HTML — l'ancien code affichait littéralement `".trim()`.
+          // FIX : le backend renvoie « prenoms » (et non « prenom »).
+          // FIX : la VALEUR envoyée est désormais l'EMAIL de l'inspecteur
+          // (identifiant unique et fiable), tandis que le texte affiché
+          // reste « Nom Prénoms — email » pour rester lisible.
+          // C'est cet email que le backend recherche dans la table
+          // utilisateurs (colonne role = 'inspecteur') pour l'envoi du mail.
           const nomComplet = `${u.nom} ${u.prenoms || ''}`.trim();
-          return `<option value="${nomComplet}">${nomComplet} — ${u.email}</option>`;
+          return `<option value="${u.email}">${nomComplet} — ${u.email}</option>`;
         })
         .join('');
 

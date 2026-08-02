@@ -7,6 +7,7 @@ import os
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 
+
 router = APIRouter(prefix="/missions", tags=["Missions"])
 
 FRONTEND_URL = os.environ.get("FRONTEND_URL", "https://warm-macaron-146f8a.netlify.app")
@@ -182,34 +183,57 @@ def _template_email_mission(nom_inspecteur: str, mission: dict) -> str:
     """
 
 
-def _notifier_inspecteurs(mission: dict, noms_inspecteurs: List[str]):
-    """Cherche les emails des inspecteurs et envoie les notifications."""
-    for nom in noms_inspecteurs:
-        nom = nom.strip()
-        if not nom:
+def _notifier_inspecteurs(mission: dict, identifiants_inspecteurs: List[str]):
+    """Cherche les inspecteurs dans la table utilisateurs et envoie les notifications.
+
+    FIX : la recherche se fait désormais en priorité par EMAIL (identifiant
+    unique et fiable envoyé par le frontend) et est restreinte aux comptes
+    dont la colonne `role` vaut 'inspecteur'. On conserve une recherche de
+    repli par nom/prénom pour les anciennes missions enregistrées avec un nom.
+    """
+    for identifiant in identifiants_inspecteurs:
+        identifiant = (identifiant or "").strip()
+        if not identifiant:
             continue
 
-        # Chercher l'email dans la table utilisateurs par nom
-        res = (
-            supabase.table("utilisateurs")
-            .select("email, nom, prenoms")
-            .ilike("nom", f"%{nom}%")
-            .execute()
-        )
+        utilisateur = None
 
-        if not res.data:
-            # Essayer avec prénom
+        # 1) Recherche prioritaire par email (valeur envoyée par le frontend),
+        #    filtrée sur le rôle 'inspecteur' via la colonne `role`.
+        if "@" in identifiant:
             res = (
                 supabase.table("utilisateurs")
-                .select("email, nom, prenoms")
-                .ilike("prenoms", f"%{nom}%")
+                .select("email, nom, prenoms, role")
+                .eq("email", identifiant)
+                .eq("role", "inspecteur")
                 .execute()
             )
+            if res.data:
+                utilisateur = res.data[0]
 
-        if res.data:
-            utilisateur = res.data[0]
-            email       = utilisateur.get("email")
-            prenom      = utilisateur.get("prenoms") or nom
+        # 2) Repli : anciennes missions stockées avec un nom/prénom.
+        if utilisateur is None:
+            res = (
+                supabase.table("utilisateurs")
+                .select("email, nom, prenoms, role")
+                .eq("role", "inspecteur")
+                .ilike("nom", f"%{identifiant}%")
+                .execute()
+            )
+            if not res.data:
+                res = (
+                    supabase.table("utilisateurs")
+                    .select("email, nom, prenoms, role")
+                    .eq("role", "inspecteur")
+                    .ilike("prenoms", f"%{identifiant}%")
+                    .execute()
+                )
+            if res.data:
+                utilisateur = res.data[0]
+
+        if utilisateur:
+            email  = utilisateur.get("email")
+            prenom = utilisateur.get("prenoms") or utilisateur.get("nom") or "Inspecteur"
 
             if email:
                 corps = _template_email_mission(prenom, mission)
@@ -219,7 +243,7 @@ def _notifier_inspecteurs(mission: dict, noms_inspecteurs: List[str]):
                     corps_html   = corps
                 )
         else:
-            print(f"⚠️ Inspecteur '{nom}' introuvable dans la base utilisateurs")
+            print(f"⚠️ Inspecteur '{identifiant}' introuvable dans la base utilisateurs (role='inspecteur')")
 
 
 # ── Routes ────────────────────────────────────────────
