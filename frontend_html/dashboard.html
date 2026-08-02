@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+  <link rel="stylesheet" href="css/style_dashbord.css">
+</head>
+<body>
+
+<!-- ══════════════════════════════
+     SIDEBAR
+══════════════════════════════ -->
+<aside class="sidebar">
+
+  <div class="sidebar-logo">
+    
+    <div class="logo-text">
+      <strong>DSFD</strong>
+      <small>Direction des Systèmes Décentralisés</small>
+    </div>
+  </div>
+
+  <nav class="sidebar-nav">
+    <a href="dashboard.html" class="active">
+       Dashboard
+    </a>
+    <a href="mission.html">
+       Missions
+    </a>
+    <a href="rapport.html">
+       Rapports
+    </a>
+    <a href="Recommandation.html">
+       Recommandations
+    </a>
+    <a href="Statistique.html">
+       Statistiques
+    </a>
+    <a href="Profil.html">
+       Utilisateur
+    </a>
+  </nav>
+
+  <div class="sidebar-bottom">
+    <a href="index.html">
+      <i class="fas fa-sign-out-alt"></i> Déconnexion
+    </a>
+  </div>
+
+</aside>
+
+<!-- ══════════════════════════════
+     MAIN
+══════════════════════════════ -->
+<div class="main">
+
+  <!-- Topbar -->
+  <header class="topbar">
+    <div class="topbar-left">
+      <nav class="breadcrumb">
+        <i class="fas fa-home" style="color:var(--orange)"></i>
+        <span>Dashboard</span>
+      </nav>
+    </div>
+    <div class="topbar-right">
+      
+      <div class="topbar-right">
+      
+      <div class="user-info">
+        <div class="user-avatar" id="user-avatar"></div>
+        <div>
+          <div class="user-name" id="user-name"></div>
+          <div class="user-role" id="user-role"></div>
+        </div>
+      </div>
+    </div>
+    </div>
+  </header>
+
+  <!-- Page content -->
+  <div class="page-content">
+
+    
+
+    <!-- KPI Cards -->
+    <div class="cards">
+      <div class="card">
+        <span class="card-label">Missions</span>
+        <span class="card-value">0</span>
+      </div>
+      <div class="card">
+        <span class="card-label">Terminées</span>
+        <span class="card-value">0</span>
+      </div>
+      <div class="card">
+        <span class="card-label">Rapports</span>
+        <span class="card-value">0</span>
+      </div>
+      <div class="card">
+        <span class="card-label">Recommandations</span>
+        <span class="card-value">0</span>
+      </div>
+    </div>
+
+    <!-- Widgets -->
+    <div class="section">
+      <div class="widget">
+        <h3>Évolution des missions</h3>
+        <div class="widget-body">
+          <i class="fas fa-chart-line" style="font-size:40px;opacity:.15"></i>
+        </div>
+      </div>
+      <div class="widget">
+        <h3>Répartition par type de mission</h3>
+        <div class="widget-body">
+          <i class="fas fa-chart-pie" style="font-size:40px;opacity:.15"></i>
+        </div>
+      </div>
+      <div class="widget">
+        <h3>Missions en cours</h3>
+        <div class="widget-body">
+          <i class="fas fa-tasks" style="font-size:40px;opacity:.15"></i>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /page-content -->
+
+</div><!-- /main -->
+
+<script src="js/app.js"></script>
+<script>
+  requireAuth();
+</script>
+</body>
+</html>

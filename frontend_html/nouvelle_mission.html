@@ -1,0 +1,564 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Nouvelle mission</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <link rel="stylesheet" href="css/nouvelle_mission.css" />
+  <style>
+    .sfd-search-wrap {
+      position: relative;
+    }
+
+    .sfd-input {
+      width: 100%;
+      padding: 10px 13px;
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius-sm);
+      font-family: 'Nunito', sans-serif;
+      font-size: 13.5px;
+      color: var(--text-dark);
+      background: #fff;
+      outline: none;
+      transition: border-color var(--transition), box-shadow var(--transition);
+    }
+
+    .sfd-input:focus {
+      border-color: var(--orange);
+      box-shadow: 0 0 0 3px rgba(232, 80, 10, .10);
+    }
+
+    .sfd-dropdown {
+      position: absolute;
+      top: calc(100% + 4px);
+      left: 0;
+      right: 0;
+      background: #fff;
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius-sm);
+      box-shadow: 0 8px 24px rgba(0, 0, 0, .10);
+      max-height: 240px;
+      overflow-y: auto;
+      z-index: 500;
+      display: none;
+    }
+
+    .sfd-dropdown.open {
+      display: block;
+    }
+
+    .sfd-item {
+      padding: 10px 14px;
+      cursor: pointer;
+      font-size: 13px;
+      border-bottom: 1px solid var(--border);
+      transition: background .12s;
+    }
+
+    .sfd-item:last-child {
+      border-bottom: none;
+    }
+
+    .sfd-item:hover,
+    .sfd-item.active {
+      background: var(--orange-light);
+      color: var(--orange);
+    }
+
+    .sfd-item strong {
+      display: block;
+      font-weight: 700;
+      font-size: 13px;
+    }
+
+    .sfd-item span {
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+
+    .sfd-selected-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--orange-light);
+      border: 1px solid var(--orange-mid);
+      color: #9A3412;
+      padding: 5px 12px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 700;
+      margin-top: 8px;
+    }
+
+    .sfd-selected-tag button {
+      background: none;
+      border: none;
+      cursor: pointer;
+      color: var(--orange);
+      font-size: 12px;
+      padding: 0;
+      line-height: 1;
+    }
+
+    .inspecteurs-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .inspecteur-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .inspecteur-row input {
+      flex: 1;
+      padding: 10px 13px;
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius-sm);
+      font-family: 'Nunito', sans-serif;
+      font-size: 13.5px;
+      outline: none;
+      transition: border-color var(--transition);
+    }
+
+    .inspecteur-row input:focus {
+      border-color: var(--orange);
+      box-shadow: 0 0 0 3px rgba(232, 80, 10, .10);
+    }
+
+    .inspecteur-row .insp-num {
+      width: 28px;
+      height: 28px;
+      background: var(--orange-light);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+      font-weight: 800;
+      color: var(--orange);
+      flex-shrink: 0;
+    }
+
+    .inspecteur-row .del-insp {
+      width: 30px;
+      height: 30px;
+      background: #FEF2F2;
+      border: none;
+      border-radius: 6px;
+      color: #EF4444;
+      cursor: pointer;
+      font-size: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .inspecteur-row .del-insp:hover {
+      background: #FECACA;
+    }
+
+    .add-insp-btn {
+      margin-top: 8px;
+      padding: 7px 14px;
+      border: 1.5px dashed var(--border);
+      border-radius: 8px;
+      background: #fff;
+      color: var(--text-muted);
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      font-family: 'Nunito', sans-serif;
+      transition: all var(--transition);
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+    }
+
+    .add-insp-btn:hover {
+      border-color: var(--orange);
+      color: var(--orange);
+    }
+
+    .type-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 11px;
+      font-weight: 700;
+      margin-top: 6px;
+    }
+
+    .type-global {
+      background: #EFF6FF;
+      color: #1D4ED8;
+    }
+
+    .type-lbcft {
+      background: #FEF2F2;
+      color: #DC2626;
+    }
+
+    .type-cameli {
+      background: #F0FDF4;
+      color: #16A34A;
+    }
+
+    .type-suivi {
+      background: #FFFBEB;
+      color: #D97706;
+    }
+
+    .volet-empty {
+      grid-column: 1 / -1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 48px 24px;
+      background: var(--card-bg);
+      border: 1.5px dashed var(--border);
+      border-radius: var(--radius);
+      color: var(--text-muted);
+      text-align: center;
+      gap: 12px;
+    }
+
+    .volet-empty i {
+      font-size: 36px;
+      opacity: .25;
+    }
+
+    .volet-empty p {
+      font-size: 13.5px;
+      font-weight: 600;
+    }
+
+    .volet-empty small {
+      font-size: 12px;
+    }
+
+    /* ── Données SFD card (page principale — CHEF DE MISSION) ── */
+    .donnees-sfd-card {
+      background: #fff;
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius);
+      margin-top: 16px;
+      overflow: hidden;
+    }
+
+    .donnees-sfd-tabs {
+      display: flex;
+      border-bottom: 1.5px solid var(--border);
+      background: #F8FAFC;
+    }
+
+    .donnees-sfd-tab {
+      padding: 12px 20px;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-muted);
+      cursor: pointer;
+      border-bottom: 2.5px solid transparent;
+      transition: all .2s;
+      display: flex;
+      align-items: center;
+      gap: 7px;
+    }
+
+    .donnees-sfd-tab.active {
+      color: var(--orange);
+      border-bottom-color: var(--orange);
+      background: #fff;
+    }
+
+    .donnees-sfd-tab:hover:not(.active) {
+      color: var(--text-dark);
+    }
+
+    .donnees-sfd-panel {
+      display: none;
+      padding: 20px 24px;
+    }
+
+    .donnees-sfd-panel.active {
+      display: block;
+    }
+
+    .chef-mission-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 3px 10px;
+      border-radius: 20px;
+      font-size: 10.5px;
+      font-weight: 700;
+      background: #FEF3C7;
+      color: #92400E;
+      margin-left: 8px;
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- ══ SIDEBAR ══ -->
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <div class="logo-text">
+        <strong>DSFD</strong>
+        <small>Direction des Systèmes Décentralisés</small>
+      </div>
+    </div>
+    <nav class="sidebar-nav">
+      <a href="dashboard.html">Dashboard</a>
+      <a href="mission.html" class="active">Missions</a>
+      <a href="rapport.html">Rapports</a>
+      <a href="Recommandation.html">Recommandations</a>
+      <a href="Statistique.html">Statistiques</a>
+      <a href="Profil.html">Utilisateurs</a>
+    </nav>
+    <div class="sidebar-bottom">
+      <a href="index.html"><i class="fas fa-sign-out-alt"></i> Déconnexion</a>
+    </div>
+  </aside>
+
+  <!-- ══ MAIN ══ -->
+  <div class="main">
+
+    <header class="topbar">
+      <nav class="breadcrumb">
+        <i class="fas fa-briefcase" style="color:var(--orange)"></i>
+        <a href="mission.html">Missions</a>
+        <i class="fas fa-chevron-right sep"></i>
+        <span class="active">Nouvelle mission</span>
+      </nav>
+      <div class="topbar-right">
+        <div class="user-info">
+          <div class="user-avatar" id="user-avatar"></div>
+          <div>
+            <div class="user-name" id="user-name"></div>
+            <div class="user-role" id="user-role"></div>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <div class="content">
+
+      <div class="page-header">
+        <a href="mission.html" class="back-btn"><i class="fas fa-arrow-left"></i></a>
+        <div>
+          <h2>Nouvelle mission de contrôle</h2>
+          <p>Renseignez les informations générales puis accédez à chaque volet pour le compléter</p>
+        </div>
+      </div>
+
+      <!-- ══ INFOS GÉNÉRALES ══ -->
+      <div class="info-card">
+        <div class="info-card-head">
+          <h3>Informations générales de la mission</h3>
+        </div>
+        <div class="info-card-body">
+
+          <!-- Ligne 1 : SFD + Date + Référence -->
+          <div class="form-grid">
+            <div class="form-group">
+              <label>SFD <span class="req">*</span></label>
+              <div class="sfd-search-wrap">
+                <input type="text" id="sfd-search" class="sfd-input" placeholder="Rechercher un SFD…"
+                  oninput="filterSFD(this.value)" onfocus="openSFDDropdown()" autocomplete="off" />
+                <div class="sfd-dropdown" id="sfd-dropdown"></div>
+              </div>
+              <div id="sfd-selected"></div>
+              <input type="hidden" id="g-sfd" />
+            </div>
+            <div class="form-group">
+              <label>Date de mission <span class="req">*</span></label>
+              <input type="date" id="g-date" oninput="syncGlobal()" />
+            </div>
+            <div class="form-group">
+              <label>Référence mission</label>
+              <input type="text" id="g-ref" placeholder="" oninput="syncGlobal()" />
+            </div>
+          </div>
+
+          <hr class="divider" />
+
+          <!-- Ligne 2 : Inspecteurs + Chef + Réviseur -->
+          <div class="form-grid">
+            <div class="form-group" style="grid-column: 1 / span 1">
+              <label>Inspecteur(s) <span class="req">*</span></label>
+              <div class="inspecteurs-list" id="inspecteurs-list"></div>
+              <button class="add-insp-btn" onclick="addInspecteur()">
+                <i class="fas fa-plus"></i> Ajouter un inspecteur
+              </button>
+            </div>
+            <div class="form-group">
+              <label>Chef de mission <span class="req">*</span></label>
+              <input type="text" id="g-chef" placeholder="Nom du chef de mission" oninput="syncGlobal()" />
+            </div>
+            <div class="form-group">
+              <label>Superviseur</label>
+              <input type="text" id="g-reviseur" placeholder="Nom de l'inspecteur vérificateur"
+                oninput="syncGlobal()" />
+            </div>
+          </div>
+
+          <hr class="divider" />
+
+          <!-- Ligne 3 : Type de contrôle + Période -->
+          <div class="form-grid two">
+            <div class="form-group">
+              <label>Type de contrôle</label>
+              <select id="g-type" onchange="onTypeChange(this.value)">
+                <option value="">-- Sélectionner --</option>
+                <option value="global">Contrôle global</option>
+                <option value="lbcft">Contrôle LBCFT</option>
+                <option value="cameli">Notation Cameli</option>
+                <option value="suivi">Evaluation des recommandations</option>
+              </select>
+              <div id="type-badge"></div>
+            </div>
+            <div class="form-group">
+              <label>Période sous revue</label>
+              <input type="text" id="g-periode" placeholder="Ex : 2025-2026" oninput="syncGlobal()" />
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- ══ DONNÉES SFD POUR LE RAPPORT — RÉSERVÉ AU CHEF DE MISSION ══ -->
+      <div class="donnees-sfd-card">
+        <div class="donnees-sfd-tabs">
+          <div class="donnees-sfd-tab active" onclick="switchTab('tab-infos-sfd', this)">
+            <i class="fas fa-building"></i> Infos SFD
+          </div>
+          <div class="donnees-sfd-tab" onclick="switchTab('tab-chef-mission', this)">
+            <i class="fas fa-user-shield"></i> Indicateurs & Suivi
+            <span class="chef-mission-badge"><i class="fas fa-lock"></i> Chef de mission</span>
+          </div>
+        </div>
+
+        <div class="donnees-sfd-panel active" id="tab-infos-sfd">
+          <div id="infos-generales-sfd"></div>
+        </div>
+        <div class="donnees-sfd-panel" id="tab-chef-mission">
+          <div id="indicateurs-activites"></div>
+          <div id="suivi-recomm-precedentes"></div>
+        </div>
+      </div>
+
+      <!-- ══ PROGRESSION ══ -->
+      <div class="progress-strip" id="progress-strip" style="display:none">
+        <span class="ps-label">Progression des volets</span>
+        <div class="ps-bar">
+          <div class="ps-fill" id="ps-fill" style="width:0%"></div>
+        </div>
+        <span class="ps-count" id="ps-count">0 / 10 complétés</span>
+      </div>
+
+      <!-- ══ BLOCS ══ -->
+      <div class="blocs-header" id="blocs-header" style="display:none">
+        <h3>Volets de contrôle</h3>
+        <span>Cliquez sur un volet pour accéder à son formulaire</span>
+      </div>
+      <div class="blocs-grid" id="blocs-grid"></div>
+
+      <!-- ══ ACTION BAR ══ -->
+      <div class="action-bar">
+        <a href="mission.html" class="btn btn-outline">
+          <i class="fas fa-arrow-left"></i> Retour
+        </a>
+        <div style="display:flex;gap:12px">
+          <button class="btn btn-outline" onclick="enregistrerMission()">
+            <i class="fas fa-save"></i> Enregistrer
+          </button>
+          <button class="btn btn-primary" onclick="soumettreMission()">
+            <i class="fas fa-paper-plane"></i> Soumettre la mission
+          </button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ══ DRAWER ══ -->
+  <div class="overlay" id="overlay" onclick="closeDrawer(event)">
+    <div class="drawer" id="drawer" onclick="event.stopPropagation()">
+      <div class="drawer-head">
+        <div class="dh-icon" id="dh-icon"><i class="fas fa-folder-open"></i></div>
+        <div style="flex:1">
+          <h3 id="dh-title">Volet</h3>
+          <div class="dh-index" id="dh-index"></div>
+        </div>
+        <button class="close-btn" onclick="closeDrawer()"><i class="fas fa-times"></i></button>
+      </div>
+      <div class="drawer-body" id="drawer-body"></div>
+      <div class="drawer-foot">
+        <button class="btn btn-outline" onclick="closeDrawer()"><i class="fas fa-arrow-left"></i> Retour</button>
+        <button class="btn btn-primary" onclick="validerBloc()"><i class="fas fa-check"></i> Valider ce volet</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div class="toast" id="toast">
+    <i class="fas fa-check-circle"></i>
+    <span id="toast-msg">Message</span>
+  </div>
+
+  <!-- ══ SCRIPTS — ordre important ══ -->
+  <script src="js/volets_save.js"></script>
+  <script src="js/credit_tables.js"></script>
+  <script src="js/rapport_tables.js"></script>
+  <script src="js/nouvelle_mission.js"></script>
+  <script src="js/app.js"></script>
+
+  <script>
+    // Onglets données SFD
+    function switchTab(tabId, el) {
+      document.querySelectorAll('.donnees-sfd-panel').forEach(p => p.classList.remove('active'));
+      document.querySelectorAll('.donnees-sfd-tab').forEach(t => t.classList.remove('active'));
+      document.getElementById(tabId).classList.add('active');
+      el.classList.add('active');
+    }
+
+    // Injecter les formulaires réservés au chef de mission (page principale)
+    document.addEventListener('DOMContentLoaded', function () {
+      const divSFD = document.getElementById('infos-generales-sfd');
+      if (divSFD && typeof buildInfosGeneralesSFD === 'function')
+        divSFD.innerHTML = buildInfosGeneralesSFD();
+
+      const divIndicateurs = document.getElementById('indicateurs-activites');
+      if (divIndicateurs && typeof buildIndicateursActivites === 'function')
+        divIndicateurs.innerHTML = buildIndicateursActivites();
+
+      const divSuiviRecomm = document.getElementById('suivi-recomm-precedentes');
+      if (divSuiviRecomm && typeof buildSuiviRecommandationsPrecedentes === 'function')
+        divSuiviRecomm.innerHTML = buildSuiviRecommandationsPrecedentes();
+    });
+  </script>
+
+  <script>
+    function switchTab(tabId, el) { /* ... inchangé ... */ }
+
+    document.addEventListener('DOMContentLoaded', function () {
+      // ... injections buildInfosGeneralesSFD(), etc. inchangées ...
+
+      // ── FIX : réappliquer les restrictions une fois les formulaires injectés ──
+      if (typeof appliquerRestrictionsRole === 'function') appliquerRestrictionsRole();
+    });
+  </script>
+
+</body>
+
+</html>

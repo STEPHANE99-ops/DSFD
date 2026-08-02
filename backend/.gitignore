@@ -1,0 +1,19 @@
+# Environnement virtuel
+venv/
+
+# Variables sensibles
+.env
+
+# Cache Python
+__pycache__/
+*.pyc
+
+# VS Code
+.vscode/
+
+# Logs
+*.log
+
+# Fichiers système
+.DS_Store
+Thumbs.db

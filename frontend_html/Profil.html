@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Mon Profil</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+  <link rel="stylesheet" href="css/profil.css"/>
+</head>
+<body>
+
+<div class="sidebar-overlay" id="sidebar-overlay" onclick="toggleSidebar()"></div>
+
+<aside class="sidebar">
+  <div class="sidebar-logo">
+    
+    <div class="logo-text"><strong>DSFD</strong><small>Direction des Systèmes Financiers Décentralisés</small></div>
+  </div>
+  <nav class="sidebar-nav">
+    <a href="dashboard.html"> Dashboard</a>
+    <a href="mission.html"> Missions</a>
+   
+    <a href="rapport.html"> Rapports</a>
+    <a href="recommandation.html"> Recommandations</a>
+    <a href="statistique.html"> Statistiques</a>
+    
+    <a href="profil.html" class="active"> Utilisateur</a>
+  </nav>
+  <div class="sidebar-bottom">
+    <a href="#" onclick="logout()"><i class="fas fa-sign-out-alt"></i> Déconnexion</a>
+  </div>
+</aside>
+
+<div class="main">
+  <header class="topbar">
+    <div class="topbar-left">
+      <button class="hamburger" id="hamburger" onclick="toggleSidebar()">
+        <span></span><span></span><span></span>
+      </button>
+      <nav class="breadcrumb">
+        <i class="fas fa-user" style="color:var(--orange)"></i>
+        <span>Mon profil</span>
+      </nav>
+    </div>
+    <div class="topbar-right">
+     
+      <div class="user-info">
+        <div class="user-avatar" id="user-avatar"></div>
+        <div>
+          <div class="user-name" id="user-name"></div>
+          <div class="user-role" id="user-role"></div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <div class="content">
+
+    <div class="page-header">
+      <div>
+        <h2>Mon profil</h2>
+        <p>Gérez vos informations personnelles</p>
+      </div>
+    </div>
+
+    <div class="profil-layout">
+
+      <!-- Sidebar profil -->
+      <div class="profil-aside">
+        <div class="card-box profil-avatar-card">
+          <div class="avatar-big" id="avatar-big"></div>
+          <div class="profil-fullname" id="profil-fullname"></div>
+          <div class="profil-email" id="profil-email"></div>
+        </div>
+
+        <div class="card-box" style="padding:8px">
+          <a href="#infos"     class="profil-nav active"><i class="fas fa-user"></i> Informations</a>
+          <a href="#securite"  class="profil-nav"><i class="fas fa-lock"></i> Sécurité</a>
+          <a href="#prefs"     class="profil-nav"><i class="fas fa-sliders-h"></i> Préférences</a>
+          <a href="#notifs"    class="profil-nav"><i class="fas fa-bell"></i> Notifications</a>
+        </div>
+      </div>
+
+      <!-- Contenu profil -->
+      <div class="profil-main">
+
+        <!-- Informations personnelles -->
+        <div class="card-box" id="infos">
+          <h3 class="section-title"><i class="fas fa-user"></i> Informations personnelles</h3>
+          <div class="profil-grid">
+            <div class="form-group">
+              <label class="field-label">Nom</label>
+              <input type="text" class="input-field" id="input-nom" placeholder="Votre nom"/>
+            </div>
+            <div class="form-group">
+              <label class="field-label">Prénom</label>
+              <input type="text" class="input-field" id="input-prenom" placeholder="Votre prénom"/>
+            </div>
+            <div class="form-group">
+              <label class="field-label">Email</label>
+              <input type="email" class="input-field" id="input-email" placeholder="votre@email.com"/>
+            </div>
+            <div class="form-group">
+              <label class="field-label">Téléphone</label>
+              <input type="text" class="input-field" id="input-tel" placeholder="+225 00 00 00 00 00"/>
+            </div>
+            <div class="form-group">
+              <label class="field-label">Fonction</label>
+              <input type="text" class="input-field" id="input-fonction" placeholder="Votre fonction"/>
+            </div>
+            <div class="form-group">
+              <label class="field-label">Structure</label>
+              <input type="text" class="input-field" id="input-structure" placeholder="Votre structure"/>
+            </div>
+          </div>
+          <div class="form-actions">
+            <button class="btn-primary" onclick="saveInfos()"><i class="fas fa-save"></i> Enregistrer</button>
+          </div>
+        </div>
+
+        <!-- Sécurité -->
+        <div class="card-box" id="securite">
+          <h3 class="section-title"><i class="fas fa-lock"></i> Sécurité</h3>
+          <div class="profil-grid">
+            <div class="form-group">
+              <label class="field-label">Mot de passe actuel</label>
+              <input type="password" class="input-field" id="input-pw-actuel" placeholder="••••••••"/>
+            </div>
+            <div class="form-group">
+              <label class="field-label">Nouveau mot de passe</label>
+              <input type="password" class="input-field" id="input-pw-new" placeholder="••••••••"/>
+            </div>
+            <div class="form-group">
+              <label class="field-label">Confirmer</label>
+              <input type="password" class="input-field" id="input-pw-confirm" placeholder="••••••••"/>
+            </div>
+          </div>
+          <div class="form-actions">
+            <button class="btn-primary" onclick="savePw()"><i class="fas fa-key"></i> Modifier le mot de passe</button>
+          </div>
+          <p id="pw-message" style="margin-top:10px;font-size:13px;font-weight:600"></p>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="js/app.js"></script>
+<script src="js/profil.js"></script>
+</body>
+</html>

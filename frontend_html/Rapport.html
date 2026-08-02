@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>DSFD – Rapports</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+  <link rel="stylesheet" href="css/rapport.css"/>
+</head>
+<body>
+
+<div class="sidebar-overlay" id="sidebar-overlay" onclick="toggleSidebar()"></div>
+
+<aside class="sidebar">
+  <div class="sidebar-logo">
+    
+    <div class="logo-text"><strong>DSFD</strong><small>Direction des Systèmes Financiers Décentralisés</small></div>
+  </div>
+  <nav class="sidebar-nav">
+    <a href="dashboard.html"> Dashboard</a>
+    
+    <a href="mission.html"></i> Missions</a>
+    <a href="Rapport.html" class="active"> Rapports</a>
+    <a href="Recommandation.html"> Recommandations</a>
+    <a href="Statistique.html"> Statistiques</a>
+    <a href="Profil.html"> Utilisateur</a>
+  </nav>
+  <div class="sidebar-bottom">
+    <a href="#" onclick="logout()"> Déconnexion</a>
+  </div>
+</aside>
+
+<div class="main">
+  <header class="topbar">
+    <div class="topbar-left">
+      <button class="hamburger" id="hamburger" onclick="toggleSidebar()">
+        <span></span><span></span><span></span>
+      </button>
+      <nav class="breadcrumb">
+        <i class="fas fa-file-alt" style="color:var(--orange)"></i>
+        <span>Rapports</span>
+      </nav>
+    </div>
+    <div class="topbar-right">
+      
+      <div class="user-info">
+        <div class="user-avatar" id="user-avatar"></div>
+        <div>
+          <div class="user-name" id="user-name"></div>
+          <div class="user-role" id="user-role"></div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <div class="content">
+
+    <div class="page-header">
+      <div>
+        <h2>Rapports</h2>
+        <p>Générez et consultez les rapports de mission</p>
+      </div>
+      
+    </div>
+
+    <!-- Types de rapports -->
+    <div class="report-grid">
+      <div class="report-type-card" onclick="selectType(this)">
+        <div class="rt-icon"><i class="fas fa-globe"></i></div>
+        <div>
+          <div class="rt-name">Mission globale</div>
+          <div class="rt-desc">Synthèse complète</div>
+        </div>
+      </div>
+      <div class="report-type-card" onclick="selectType(this)">
+        <div class="rt-icon"><i class="fas fa-tasks"></i></div>
+        <div>
+          <div class="rt-name">Suivi recommandations</div>
+          <div class="rt-desc">État d'avancement</div>
+        </div>
+      </div>
+      <div class="report-type-card" onclick="selectType(this)">
+        <div class="rt-icon"><i class="fas fa-shield-alt"></i></div>
+        <div>
+          <div class="rt-name">LBC/FT/FP</div>
+          <div class="rt-desc">Lutte contre blanchiment</div>
+        </div>
+      </div>
+      <div class="report-type-card" onclick="selectType(this)">
+        <div class="rt-icon"><i class="fas fa-chart-pie"></i></div>
+        <div>
+          <div class="rt-name">Rapport CAMELI</div>
+          <div class="rt-desc">Indicateurs prudentiels</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Configuration + Tableau -->
+    <div class="rapport-row">
+
+      <div class="card-box" style="flex:0 0 280px">
+        <h3 class="section-title">Configuration</h3>
+        <div class="form-group">
+          <label class="field-label">Mission concernée</label>
+          <select class="input-field" id="mission-select">
+            <option value="">-- Sélectionner --</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="field-label">Format de sortie</label>
+          <select class="input-field" id="format-select">
+            <option value="">-- Sélectionner --</option>
+            <option value="pdf">PDF</option>
+            <option value="docx">Word (.docx)</option>
+            <option value="xlsx">Excel (.xlsx)</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="field-label">Langue</label>
+          <select class="input-field" id="langue-select">
+            <option value="">-- Sélectionner --</option>
+            <option value="fr">Français</option>
+            <option value="en">Anglais</option>
+          </select>
+        </div>
+          <button class="btn-primary" onclick="genererRapport()" style="width:100%;margin-top:20px;justify-content:center">
+               <i class="fas fa-magic"></i> Générer
+           </button>
+      </div>
+
+      <div class="card-box" style="flex:1;padding:0">
+        <div class="table-head">
+          <h3 class="section-title" style="margin:0">Rapports générés</h3>
+          <button class="btn-outline"><i class="fas fa-download"></i> Exporter</button>
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th>Référence</th>
+              <th>Mission</th>
+              <th>Type</th>
+              <th>Date</th>
+              <th>Format</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="rapports-tbody">
+            <tr class="empty-row">
+              <td colspan="6"><i class="fas fa-file-alt"></i><p>Aucun rapport généré</p></td>
+            </tr>
+          </tbody>
+        </table>
+        <div class="pagination">
+          <span id="pagination-info">—</span>
+          <div class="page-btns" id="page-btns"></div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script src="js/app.js"></script>
+<script src="js/rapports.js"></script>
+</body>
+</html>

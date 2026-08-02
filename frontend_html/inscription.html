@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Inscription</title>
+  
+  <link rel="stylesheet" href="css/inscription.css">
+  <style>
+    .input-wrap select {
+      width: 100%;
+      padding: 10px 38px 10px 36px;
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius-sm);
+      font-family: 'poppins', sans-serif;
+      font-size: 13px; color: var(--text-dark);
+      background: var(--white); outline: none;
+      appearance: none;
+      transition: border-color var(--transition), box-shadow var(--transition);
+    }
+    .input-wrap select:focus {
+      border-color: var(--orange);
+      box-shadow: 0 0 0 3px rgba(232,80,10,.10);
+    }
+  </style>
+</head>
+<body>
+
+<div class="auth-container">
+
+  <!-- Panneau gauche : branding -->
+  <div class="auth-brand">
+    <div class="brand-logo">
+      
+      <div class="brand-name">
+        <span class="name-main">DSFD</span>
+        <span class="name-sub">Direction des Systèmes<br>Financiers Décentralisés</span>
+      </div>
+    </div>
+
+    
+
+    
+
+    <!-- Cercles déco -->
+    <div class="deco-circle deco-1"></div>
+    <div class="deco-circle deco-2"></div>
+  </div>
+
+  <!-- Panneau droit : formulaire -->
+  <div class="auth-form-panel">
+
+    <div class="form-heading">
+      <h2>Créer un compte</h2>
+      <p>Renseignez vos informations pour vous inscrire</p>
+    </div>
+
+    <form id="signupForm" novalidate>
+
+      <!-- Nom & Prénom côte à côte -->
+      <div class="field-row">
+        <div class="field-group">
+          <label class="field-label" for="name">Nom <span class="req">*</span></label>
+          <div class="input-wrap">
+            <i class="fas fa-user input-icon"></i>
+            <input type="text" id="name" placeholder="" required/>
+          </div>
+        </div>
+        <div class="field-group">
+          <label class="field-label" for="user_name">Prénoms <span class="req">*</span></label>
+          <div class="input-wrap">
+            <i class="fas fa-user input-icon"></i>
+            <input type="text" id="user_name" placeholder="" required/>
+          </div>
+        </div>
+      </div>
+
+      <!-- Rôle applicatif — seul champ de rôle, pleine largeur -->
+      <div class="field-group">
+        <label class="field-label" for="user_role">Rôle <span class="req">*</span></label>
+        <div class="input-wrap">
+          <i class="fas fa-user-shield input-icon"></i>
+          <select id="user_role" required>
+            <option value="" disabled selected>-- Sélectionner --</option>
+            <option value="inspecteur">Inspecteur</option>
+            <option value="chef_mission">Chef de mission</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Email -->
+      <div class="field-group">
+        <label class="field-label" for="email">Email <span class="req">*</span></label>
+        <div class="input-wrap">
+          <i class="fas fa-envelope input-icon"></i>
+          <input type="email" id="email" placeholder="" required/>
+        </div>
+      </div>
+
+      <!-- Mot de passe -->
+      <div class="field-group">
+        <label class="field-label" for="password">Mot de passe <span class="req">*</span></label>
+        <div class="input-wrap">
+          <i class="fas fa-lock input-icon"></i>
+          <input type="password" id="password" placeholder="" required/>
+          <button type="button" class="toggle-pw" id="togglePw1">
+            <i class="fas fa-eye"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- Confirmation -->
+      <div class="field-group">
+        <label class="field-label" for="confirmPassword">Confirmer le mot de passe <span class="req">*</span></label>
+        <div class="input-wrap">
+          <i class="fas fa-lock input-icon"></i>
+          <input type="password" id="confirmPassword" placeholder="" required/>
+          <button type="button" class="toggle-pw" id="togglePw2">
+            <i class="fas fa-eye"></i>
+          </button>
+        </div>
+      </div>
+
+      <button type="submit" class="btn-submit">
+        <i class="fas fa-user-plus"></i> Créer mon compte
+      </button>
+
+    </form>
+
+    <p id="message"></p>
+
+    
+
+  </div>
+</div>
+
+<script src="js/app.js"></script>
+<script>
+  document.getElementById('togglePw1').addEventListener('click', function () {
+    const pw = document.getElementById('password');
+    pw.type = pw.type === 'password' ? 'text' : 'password';
+    this.querySelector('i').classList.toggle('fa-eye');
+    this.querySelector('i').classList.toggle('fa-eye-slash');
+  });
+  document.getElementById('togglePw2').addEventListener('click', function () {
+    const pw = document.getElementById('confirmPassword');
+    pw.type = pw.type === 'password' ? 'text' : 'password';
+    this.querySelector('i').classList.toggle('fa-eye');
+    this.querySelector('i').classList.toggle('fa-eye-slash');
+  });
+</script>
+</body>
+</html>

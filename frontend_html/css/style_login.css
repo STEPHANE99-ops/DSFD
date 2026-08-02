@@ -1,0 +1,405 @@
+/*connexion*/ 
+
+/* ========================================
+   DSFD - Direction des Systèmes Financiers Décentralisés
+   Page de Connexion - style.css
+   ======================================== */
+
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
+
+/* ── Reset & Base ── */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+:root {
+  --orange:        #E8500A;
+  --orange-light:  #F4762A;
+  --orange-pale:   #FDE8DC;
+  --green:         #2D6A2D;
+  --green-light:   #3A8A3A;
+  --white:         #FFFFFF;
+  --gray-50:       #F9FAFB;
+  --gray-100:      #F3F4F6;
+  --gray-200:      #E5E7EB;
+  --gray-400:      #9CA3AF;
+  --gray-600:      #4B5563;
+  --gray-800:      #1F2937;
+  --shadow-sm:     0 1px 3px rgba(0,0,0,.10);
+  --shadow-md:     0 4px 16px rgba(0,0,0,.12);
+  --shadow-lg:     0 8px 32px rgba(0,0,0,.16);
+  --radius:        12px;
+  --radius-sm:     8px;
+  --transition:    .25s ease;
+}
+
+html, body {
+  height: 100%;
+  font-family: 'Poppins', sans-serif;
+  font-size: 14px;
+  color: var(--gray-800);
+  background: var(--gray-100);
+}
+
+/* ── Full-screen layout ── */
+body {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  overflow: hidden;
+}
+
+/* ── Wrapper card (two columns) ── */
+.login-container {
+  display: flex;
+  width: min(900px, 96vw);
+  min-height: 520px;
+  border-radius: var(--radius);
+  overflow: hidden;
+  box-shadow: var(--shadow-lg);
+  background: var(--white);
+  position: relative;
+  animation: fadeUp .55s ease both;
+}
+
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(28px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ════════════════════════════════════════
+   LEFT PANEL — branding / illustration
+   ════════════════════════════════════════ */
+.login-brand {
+  flex: 1 1 45%;
+  background: linear-gradient(150deg, var(--orange) 0%, var(--orange-light) 60%, #F9A05A 100%);
+  color: var(--white);
+  padding: 48px 40px 40px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Decorative circles */
+.login-brand::before,
+.login-brand::after {
+  content: '';
+  position: absolute;
+  border-radius: 50%;
+  opacity: .18;
+}
+.login-brand::before {
+  width: 320px; height: 320px;
+  background: var(--white);
+  bottom: -80px; right: -80px;
+}
+.login-brand::after {
+  width: 180px; height: 180px;
+  background: var(--white);
+  top: -60px; left: -40px;
+}
+
+/* Logo */
+.brand-logo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  z-index: 1;
+}
+
+.logo-icon {
+  width: 56px;
+  height: 56px;
+  flex-shrink: 0;
+}
+
+.brand-name {
+  line-height: 1.1;
+}
+.brand-name .name-main {
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: .5px;
+}
+.brand-name .name-sub {
+  font-size: 8.5px;
+  font-weight: 400;
+  text-transform: uppercase;
+  letter-spacing: 1.2px;
+  opacity: .9;
+  margin-top: 2px;
+}
+
+/* Tagline */
+.brand-tagline {
+  z-index: 1;
+}
+.brand-tagline h1 {
+  font-size: 22px;
+  font-weight: 700;
+  line-height: 1.25;
+  margin-bottom: 10px;
+}
+.brand-tagline p {
+  font-size: 13px;
+  opacity: .9;
+  line-height: 1.55;
+  max-width: 280px;
+}
+
+/* Illustration mockup */
+.brand-illustration {
+  z-index: 1;
+  margin-top: auto;
+  display: flex;
+  justify-content: center;
+}
+
+.mockup-card {
+  background: rgba(255,255,255,.20);
+  backdrop-filter: blur(8px);
+  border: 1.5px solid rgba(255,255,255,.35);
+  border-radius: var(--radius);
+  padding: 18px 22px;
+  width: 100%;
+  max-width: 300px;
+}
+
+.mockup-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+.mockup-dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  background: rgba(255,255,255,.7);
+}
+.mockup-title {
+  font-size: 11px;
+  font-weight: 600;
+  opacity: .85;
+}
+
+.mockup-stats {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+.mockup-stat {
+  background: rgba(255,255,255,.15);
+  border-radius: var(--radius-sm);
+  padding: 8px 10px;
+}
+.mockup-stat .stat-num {
+  font-size: 18px;
+  font-weight: 700;
+}
+.mockup-stat .stat-label {
+  font-size: 9px;
+  opacity: .8;
+  margin-top: 1px;
+}
+
+.mockup-bar-row {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+.mockup-bar {
+  height: 6px;
+  border-radius: 99px;
+  background: rgba(255,255,255,.25);
+  overflow: hidden;
+}
+.mockup-bar-fill {
+  height: 100%;
+  border-radius: 99px;
+  background: var(--white);
+}
+
+/* ════════════════════════════════════════
+   RIGHT PANEL — form
+   ════════════════════════════════════════ */
+.login-form-panel {
+  flex: 1 1 55%;
+  padding: 52px 48px 44px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.form-heading {
+  margin-bottom: 28px;
+}
+.form-heading h2 {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--gray-800);
+  margin-bottom: 4px;
+}
+.form-heading p {
+  font-size: 13px;
+  color: var(--gray-400);
+}
+
+/* Form elements */
+#loginForm {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.field-group {
+  margin-bottom: 18px;
+}
+
+label.field-label {
+  display: block;
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--gray-600);
+  margin-bottom: 6px;
+}
+
+.input-wrapper {
+  position: relative;
+}
+
+.input-wrapper input {
+  width: 100%;
+  padding: 11px 14px;
+  border: 1.5px solid var(--gray-200);
+  border-radius: var(--radius-sm);
+  font-family: 'Poppins', sans-serif;
+  font-size: 13.5px;
+  color: var(--gray-800);
+  background: var(--white);
+  transition: border-color var(--transition), box-shadow var(--transition);
+  outline: none;
+}
+
+.input-wrapper input::placeholder {
+  color: var(--gray-400);
+  font-size: 13px;
+}
+
+.input-wrapper input:focus {
+  border-color: var(--orange);
+  box-shadow: 0 0 0 3px rgba(232,80,10,.10);
+}
+
+/* Password eye toggle */
+.toggle-pw {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--gray-400);
+  padding: 2px;
+  display: flex;
+  align-items: center;
+  transition: color var(--transition);
+}
+.toggle-pw:hover { color: var(--gray-600); }
+
+/* Checkbox row */
+.form-options {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 24px;
+}
+
+.checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 12.5px;
+  color: var(--gray-600);
+  cursor: pointer;
+  user-select: none;
+}
+
+.checkbox-label input[type="checkbox"] {
+  width: 15px;
+  height: 15px;
+  accent-color: var(--orange);
+  cursor: pointer;
+}
+
+.forgot-link {
+  font-size: 12.5px;
+  color: var(--orange);
+  text-decoration: none;
+  font-weight: 500;
+  transition: opacity var(--transition);
+}
+.forgot-link:hover { opacity: .75; }
+
+/* Submit button */
+button[type="submit"] {
+  width: 100%;
+  padding: 13px;
+  background: var(--orange);
+  color: var(--white);
+  border: none;
+  border-radius: var(--radius-sm);
+  font-family: 'Poppins', sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: .3px;
+  cursor: pointer;
+  transition: background var(--transition), transform .15s ease, box-shadow var(--transition);
+  box-shadow: 0 4px 14px rgba(232,80,10,.35);
+}
+button[type="submit"]:hover {
+  background: var(--orange-light);
+  box-shadow: 0 6px 18px rgba(232,80,10,.45);
+  transform: translateY(-1px);
+}
+button[type="submit"]:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 8px rgba(232,80,10,.30);
+}
+
+/* Register link */
+.register-link {
+  margin-top: 20px;
+  text-align: center;
+  font-size: 12.5px;
+  color: var(--gray-400);
+}
+.register-link a {
+  color: var(--orange);
+  font-weight: 600;
+  text-decoration: none;
+}
+.register-link a:hover { text-decoration: underline; }
+
+/* Feedback message */
+#message {
+  margin-top: 12px;
+  font-size: 13px;
+  text-align: center;
+  min-height: 18px;
+  color: var(--green);
+}
+#message.error { color: #DC2626; }
+
+/* ── Responsive ── */
+@media (max-width: 640px) {
+  .login-brand { display: none; }
+  .login-container { width: 94vw; min-height: auto; }
+  .login-form-panel { padding: 40px 28px 36px; }
+}

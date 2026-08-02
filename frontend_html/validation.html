@@ -1,0 +1,503 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>DSFD — Validation rapport</title>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800&display=swap"/>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+  <style>
+    :root {
+      --orange:       #E8500A;
+      --orange-hover: #C94008;
+      --orange-light: #FFF3EE;
+      --white:        #FFFFFF;
+      --bg:           #F4F5F7;
+      --card-bg:      #FFFFFF;
+      --text-dark:    #1A1F2E;
+      --text-muted:   #8A94A6;
+      --border:       #E8EBF0;
+      --red:          #EF4444;
+      --green:        #16A34A;
+      --sidebar-width:240px;
+      --radius:       12px;
+      --radius-sm:    8px;
+      --radius-xs:    6px;
+      --shadow:       0 1px 4px rgba(0,0,0,.06);
+      --transition:   .2s ease;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; font-family: 'Nunito', sans-serif; font-size: 14px; background: var(--bg); color: var(--text-dark); }
+    a { text-decoration: none; color: inherit; }
+    button { cursor: pointer; font-family: inherit; }
+    body { display: flex; min-height: 100vh; }
+
+    /* ── SIDEBAR ── */
+    .sidebar { width: var(--sidebar-width); min-height: 100vh; background: var(--white); display: flex; flex-direction: column; position: fixed; top: 0; left: 0; z-index: 100; padding-bottom: 20px; border-right: 1px solid var(--border); }
+    .sidebar-logo { padding: 24px 20px 20px; border-bottom: 1px solid var(--border); margin-bottom: 8px; }
+    .logo-text strong { display: block; font-size: 17px; font-weight: 800; color: var(--text-dark); line-height: 1.2; }
+    .logo-text small { display: block; font-size: 10px; color: var(--text-muted); text-transform: uppercase; letter-spacing: .8px; line-height: 1.5; margin-top: 3px; }
+    .sidebar-nav { flex: 1; display: flex; flex-direction: column; gap: 2px; padding: 8px 12px; }
+    .sidebar-nav a { display: flex; align-items: center; padding: 12px 16px; border-radius: var(--radius-sm); font-size: 13.5px; font-weight: 500; color: var(--text-muted); transition: all var(--transition); position: relative; }
+    .sidebar-nav a:hover { background: var(--bg); color: var(--text-dark); }
+    .sidebar-nav a.active { background: var(--orange-light); color: var(--orange); font-weight: 700; }
+    .sidebar-nav a.active::before { content: ''; position: absolute; left: 0; top: 22%; bottom: 22%; width: 3px; border-radius: 0 3px 3px 0; background: var(--orange); }
+    .sidebar-bottom { padding: 0 12px; margin-top: auto; }
+    .sidebar-bottom a { display: flex; align-items: center; padding: 12px 16px; border-radius: var(--radius-sm); font-size: 13px; font-weight: 500; color: var(--text-muted); transition: all var(--transition); }
+    .sidebar-bottom a:hover { color: var(--red); background: #FEF2F2; }
+
+    /* ── MAIN ── */
+    .main { margin-left: var(--sidebar-width); flex: 1; display: flex; flex-direction: column; min-height: 100vh; }
+
+    /* ── TOPBAR ── */
+    .topbar { height: 60px; background: var(--white); border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; padding: 0 28px; position: sticky; top: 0; z-index: 50; }
+    .breadcrumb { display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 700; color: var(--text-dark); }
+    .breadcrumb .sep { color: var(--text-muted); font-size: 11px; }
+    .breadcrumb .active { color: var(--text-muted); font-weight: 600; }
+    .user-info { display: flex; align-items: center; gap: 9px; }
+    .user-avatar { width: 34px; height: 34px; background: var(--orange); color: var(--white); font-size: 12px; font-weight: 800; border-radius: 9px; display: flex; align-items: center; justify-content: center; }
+    .user-name { font-size: 13px; font-weight: 700; color: var(--text-dark); }
+    .user-role { font-size: 11px; color: var(--text-muted); }
+
+    /* ── CONTENT ── */
+    .content { padding: 28px 32px 48px; display: flex; flex-direction: column; gap: 20px; animation: fadeIn .35s ease both; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+
+    /* ── PAGE HEADER ── */
+    .page-header h2 { font-size: 21px; font-weight: 800; color: var(--text-dark); margin-bottom: 2px; }
+    .page-header p  { font-size: 13px; color: var(--text-muted); }
+
+    /* ── STEPPER ── */
+    .stepper {
+      background: var(--white);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 24px 32px;
+      display: flex;
+      align-items: center;
+      box-shadow: var(--shadow);
+    }
+    .step {
+      flex: 1; display: flex; flex-direction: column; align-items: center; gap: 8px; position: relative;
+    }
+    .step:not(:last-child)::after {
+      content: ''; position: absolute; top: 17px; left: 58%; width: 84%; height: 2px;
+      background: var(--border); z-index: 0;
+    }
+    .step.done:not(:last-child)::after   { background: var(--green); }
+    .step.active:not(:last-child)::after { background: var(--border); }
+
+    .step-circle {
+      width: 34px; height: 34px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 13px; font-weight: 800;
+      background: var(--border); color: var(--text-muted);
+      position: relative; z-index: 1; transition: all .2s;
+    }
+    .step.done     .step-circle { background: var(--green);  color: #fff; }
+    .step.active   .step-circle { background: var(--orange); color: #fff; box-shadow: 0 0 0 4px rgba(232,80,10,.15); }
+    .step.rejected .step-circle { background: var(--red);    color: #fff; }
+    .step-label { font-size: 11px; font-weight: 700; color: var(--text-muted); text-align: center; }
+    .step.done     .step-label { color: var(--green); }
+    .step.active   .step-label { color: var(--orange); }
+    .step.rejected .step-label { color: var(--red); }
+
+    /* ── CARD ── */
+    .card-box { background: var(--card-bg); border-radius: var(--radius); border: 1px solid var(--border); box-shadow: var(--shadow); overflow: hidden; }
+    .card-head { padding: 16px 20px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 9px; }
+    .card-head h3 { font-size: 14px; font-weight: 800; color: var(--text-dark); }
+    .card-head i  { color: var(--orange); font-size: 14px; }
+    .card-body    { padding: 20px; }
+
+    /* ── INFO GRID ── */
+    .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    .info-item label { display: block; font-size: 11px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: .5px; margin-bottom: 4px; }
+    .info-item span  { font-size: 14px; font-weight: 700; color: var(--text-dark); }
+
+    /* ── BADGES ── */
+    .badge { display: inline-flex; align-items: center; padding: 3px 10px; border-radius: 99px; font-size: 11.5px; font-weight: 700; }
+    .badge-warning { background: #FFFBEB; color: #B45309; }
+    .badge-success { background: #F0FDF4; color: var(--green); }
+    .badge-danger  { background: #FEF2F2; color: var(--red); }
+    .badge-muted   { background: var(--bg); color: var(--text-muted); }
+
+    /* ── HISTORIQUE ── */
+    .val-list { display: flex; flex-direction: column; gap: 10px; }
+    .val-item {
+      border: 1px solid var(--border); border-radius: var(--radius-sm);
+      padding: 14px 16px; display: flex; gap: 12px; align-items: flex-start;
+    }
+    .val-item.valide  { border-color: #BBF7D0; background: #F0FDF4; }
+    .val-item.rejete  { border-color: #FECACA; background: #FEF2F2; }
+    .val-item.pending { border-color: #FED7AA; background: #FFF7ED; }
+    .val-icon { width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 14px; flex-shrink: 0; }
+    .val-icon.valide  { background: var(--green); color: #fff; }
+    .val-icon.rejete  { background: var(--red);   color: #fff; }
+    .val-icon.pending { background: var(--orange); color: #fff; }
+    .val-niveau  { font-size: 13px; font-weight: 800; color: var(--text-dark); }
+    .val-nom     { font-size: 12px; color: var(--text-muted); margin-top: 1px; }
+    .val-comment { font-size: 13px; color: var(--text-dark); margin-top: 6px; font-style: italic; }
+    .val-date    { font-size: 11px; color: var(--text-muted); margin-top: 3px; }
+
+    /* ── FORM ── */
+    .field-label { display: block; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; color: var(--text-muted); margin-bottom: 6px; }
+    textarea {
+      width: 100%; padding: 10px 13px;
+      border: 1.5px solid var(--border); border-radius: var(--radius-sm);
+      font-family: 'Nunito', sans-serif; font-size: 13px; color: var(--text-dark);
+      resize: vertical; min-height: 110px; outline: none;
+      transition: border-color var(--transition);
+    }
+    textarea:focus { border-color: var(--orange); }
+    textarea::placeholder { color: var(--text-muted); }
+
+    /* ── BOUTONS ── */
+    .btn-row { display: flex; gap: 10px; margin-top: 16px; }
+    .btn-valider {
+      flex: 1; padding: 11px 20px; background: var(--green); color: #fff;
+      border: none; border-radius: var(--radius-sm);
+      font-size: 13px; font-weight: 700; font-family: 'Nunito', sans-serif;
+      display: flex; align-items: center; justify-content: center; gap: 7px;
+      transition: all var(--transition);
+    }
+    .btn-valider:hover { background: #15803D; transform: translateY(-1px); }
+    .btn-rejeter {
+      flex: 1; padding: 11px 20px; background: var(--white); color: var(--red);
+      border: 1.5px solid #FECACA; border-radius: var(--radius-sm);
+      font-size: 13px; font-weight: 700; font-family: 'Nunito', sans-serif;
+      display: flex; align-items: center; justify-content: center; gap: 7px;
+      transition: all var(--transition);
+    }
+    .btn-rejeter:hover { background: #FEF2F2; }
+    .btn-valider:disabled, .btn-rejeter:disabled { opacity: .5; cursor: not-allowed; transform: none; }
+
+    /* ── RÉSULTAT FINAL ── */
+    .result-card {
+      border-radius: var(--radius); padding: 28px; text-align: center;
+    }
+    .result-card.success { background: #F0FDF4; border: 1.5px solid #BBF7D0; }
+    .result-card.danger  { background: #FEF2F2; border: 1.5px solid #FECACA; }
+    .result-card h3 { font-size: 17px; font-weight: 800; margin-bottom: 8px; }
+    .result-card.success h3 { color: var(--green); }
+    .result-card.danger  h3 { color: var(--red); }
+    .result-card p { font-size: 13px; color: var(--text-muted); margin-bottom: 20px; }
+    .btn-download {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 11px 28px; background: var(--green); color: #fff;
+      border-radius: var(--radius-sm); font-size: 13px; font-weight: 700;
+      border: none; font-family: 'Nunito', sans-serif; transition: all var(--transition);
+    }
+    .btn-download:hover { background: #15803D; }
+
+    /* ── LIEN RAPPORT ── */
+    .rapport-link {
+      display: inline-flex; align-items: center; gap: 7px;
+      color: var(--orange); font-weight: 700; font-size: 13px;
+      margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--border);
+    }
+    .rapport-link:hover { color: var(--orange-hover); }
+
+    /* ── TOAST ── */
+    .toast {
+      position: fixed; bottom: 24px; right: 24px;
+      background: var(--text-dark); color: #fff;
+      padding: 12px 20px; border-radius: var(--radius-sm);
+      font-size: 13px; font-weight: 600;
+      display: flex; align-items: center; gap: 9px;
+      box-shadow: 0 4px 20px rgba(0,0,0,.15);
+      opacity: 0; transition: opacity .3s; z-index: 999;
+    }
+    .toast.show { opacity: 1; }
+
+    /* ── LOADER ── */
+    .loader { display: flex; align-items: center; justify-content: center; padding: 60px; color: var(--text-muted); gap: 12px; }
+    .spinner { width: 22px; height: 22px; border: 3px solid var(--border); border-top-color: var(--orange); border-radius: 50%; animation: spin .7s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── RESPONSIVE ── */
+    @media (max-width: 720px) {
+      .sidebar { display: none; }
+      .main { margin-left: 0; }
+      .info-grid { grid-template-columns: 1fr; }
+      .btn-row { flex-direction: column; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ── SIDEBAR ── -->
+<aside class="sidebar">
+  <div class="sidebar-logo">
+    <div class="logo-text">
+      <strong>DSFD</strong>
+      <small>Direction des Systèmes Financiers Décentralisés</small>
+    </div>
+  </div>
+  <nav class="sidebar-nav">
+    <a href="dashboard.html">Dashboard</a>
+    <a href="mission.html">Missions</a>
+    <a href="rapport.html">Rapports</a>
+    <a href="Recommandation.html">Recommandations</a>
+    <a href="Statistique.html">Statistiques</a>
+    <a href="Profil.html">Utilisateurs</a>
+  </nav>
+  <div class="sidebar-bottom">
+    <a href="index.html"><i class="fas fa-sign-out-alt"></i> Déconnexion</a>
+  </div>
+</aside>
+
+<!-- ── MAIN ── -->
+<div class="main">
+
+  <header class="topbar">
+    <nav class="breadcrumb">
+      <i class="fas fa-clipboard-check" style="color:var(--orange)"></i>
+      <a href="rapport.html">Rapports</a>
+      <i class="fas fa-chevron-right sep"></i>
+      <span class="active">Validation</span>
+    </nav>
+    <div class="user-info">
+      <div class="user-avatar" id="user-avatar"></div>
+      <div>
+        <div class="user-name" id="user-name"></div>
+        <div class="user-role" id="user-role"></div>
+      </div>
+    </div>
+  </header>
+
+  <div class="content">
+
+    <div class="page-header">
+      <div>
+        <h2>Validation du rapport</h2>
+        <p id="page-sub">Chargement…</p>
+      </div>
+    </div>
+
+    <div id="main-content">
+      <div class="loader">
+        <div class="spinner"></div>
+        Chargement du rapport…
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast">
+  <i class="fas fa-check-circle"></i>
+  <span id="toast-msg"></span>
+</div>
+
+<script src="js/app.js"></script>
+<script>
+  const params     = new URLSearchParams(window.location.search);
+  const RAPPORT_ID = parseInt(params.get('rapport_id'));
+  const NIVEAU     = parseInt(params.get('niveau'));
+
+  const LABEL_NIVEAU = { 1: 'Chef de mission', 2: 'Responsable des missions', 3: 'Directeur' };
+
+  let rapportData     = null;
+  let validationsData = [];
+
+  async function init() {
+    if (!RAPPORT_ID || !NIVEAU) {
+      document.getElementById('main-content').innerHTML = erreurHTML('Lien invalide', 'Ce lien de validation est incorrect ou expiré.');
+      return;
+    }
+
+    document.getElementById('page-sub').textContent = `Niveau ${NIVEAU} — ${LABEL_NIVEAU[NIVEAU] || ''}`;
+
+    try {
+      const [rapRes, valRes] = await Promise.all([
+        fetch(`${API_URL}/rapports/`),
+        fetch(`${API_URL}/validations/rapport/${RAPPORT_ID}`)
+      ]);
+
+      const rapData = await rapRes.json();
+      rapportData   = (rapData.rapports || []).find(r => r.id === RAPPORT_ID);
+      if (!rapportData) throw new Error('Rapport introuvable');
+
+      const valData   = await valRes.json();
+      validationsData = valData.validations || [];
+
+      render();
+    } catch (e) {
+      document.getElementById('main-content').innerHTML = erreurHTML('Erreur de chargement', e.message);
+    }
+  }
+
+  function render() {
+    const statut   = rapportData.statut_validation || 'brouillon';
+    const valNiveau = validationsData.find(v => v.niveau === NIVEAU);
+    const dejaTraite = valNiveau && valNiveau.statut !== 'en_attente';
+
+    let html = '';
+
+    // ── Stepper ──
+    html += `<div class="stepper">
+      ${[1,2,3].map(n => {
+        const v = validationsData.find(x => x.niveau === n);
+        let cls = '';
+        if (v?.statut === 'valide')    cls = 'done';
+        else if (v?.statut === 'rejete') cls = 'rejected';
+        else if (n === NIVEAU)           cls = 'active';
+        const icons  = {1:'fa-user-tie', 2:'fa-users-cog', 3:'fa-crown'};
+        const labels = {1:'Chef de mission', 2:'Responsable', 3:'Directeur'};
+        return `<div class="step ${cls}">
+          <div class="step-circle">
+            ${v?.statut === 'valide' ? '<i class="fas fa-check"></i>'
+              : v?.statut === 'rejete' ? '<i class="fas fa-times"></i>'
+              : `<i class="fas ${icons[n]}"></i>`}
+          </div>
+          <div class="step-label">${labels[n]}</div>
+        </div>`;
+      }).join('')}
+    </div>`;
+
+    // ── Infos rapport ──
+    html += `<div class="card-box">
+      <div class="card-head"><i class="fas fa-file-alt"></i><h3>Informations du rapport</h3></div>
+      <div class="card-body">
+        <div class="info-grid">
+          <div class="info-item"><label>Référence</label><span>${rapportData.reference || '—'}</span></div>
+          <div class="info-item"><label>SFD concerné</label><span>${rapportData.mission_sfd || '—'}</span></div>
+          <div class="info-item"><label>Type</label><span>${rapportData.type_rapport || 'global'}</span></div>
+          <div class="info-item"><label>Statut</label>
+            <span class="badge ${statut === 'valide' ? 'badge-success' : statut === 'rejete' ? 'badge-danger' : 'badge-warning'}">
+              ${statut.replace(/_/g,' ')}
+            </span>
+          </div>
+        </div>
+        ${rapportData.fichier_url ? `
+        <a href="${rapportData.fichier_url}" target="_blank" class="rapport-link">
+          <i class="fas fa-download"></i> Télécharger le rapport pour lecture
+        </a>` : ''}
+      </div>
+    </div>`;
+
+    // ── Historique validations précédentes ──
+    const precedentes = validationsData.filter(v => v.niveau < NIVEAU);
+    if (precedentes.length > 0) {
+      html += `<div class="card-box">
+        <div class="card-head"><i class="fas fa-history"></i><h3>Validations précédentes</h3></div>
+        <div class="card-body">
+          <div class="val-list">
+            ${precedentes.map(v => `
+            <div class="val-item ${v.statut}">
+              <div class="val-icon ${v.statut}">
+                <i class="fas ${v.statut === 'valide' ? 'fa-check' : 'fa-times'}"></i>
+              </div>
+              <div>
+                <div class="val-niveau">${LABEL_NIVEAU[v.niveau] || 'Niveau ' + v.niveau}</div>
+                <div class="val-nom">${v.validateur_nom || '—'}</div>
+                ${v.commentaire ? `<div class="val-comment">"${v.commentaire}"</div>` : ''}
+                ${v.date_validation ? `<div class="val-date">${new Date(v.date_validation).toLocaleDateString('fr-FR',{day:'2-digit',month:'long',year:'numeric'})}</div>` : ''}
+              </div>
+            </div>`).join('')}
+          </div>
+        </div>
+      </div>`;
+    }
+
+    // ── Résultat final ou formulaire ──
+    if (statut === 'valide') {
+      html += `<div class="result-card success">
+        <h3><i class="fas fa-check-circle"></i> Rapport validé !</h3>
+        <p>Approuvé par les 3 niveaux de validation.</p>
+        <a href="${rapportData.fichier_url}" download class="btn-download">
+          <i class="fas fa-download"></i> Télécharger le rapport final
+        </a>
+      </div>`;
+    } else if (statut === 'rejete') {
+      html += `<div class="result-card danger">
+        <h3><i class="fas fa-times-circle"></i> Rapport rejeté</h3>
+        <p>Ce rapport a été rejeté. L'inspecteur doit générer un nouveau rapport corrigé.</p>
+      </div>`;
+    } else if (dejaTraite) {
+      html += `<div class="card-box">
+        <div class="card-body" style="text-align:center;padding:32px">
+          <i class="fas fa-check-circle" style="font-size:36px;color:var(--green);display:block;margin-bottom:12px"></i>
+          <div style="font-size:15px;font-weight:800;color:var(--text-dark)">Vous avez déjà traité ce rapport</div>
+          <div style="font-size:13px;color:var(--text-muted);margin-top:6px">
+            Votre validation a été enregistrée le ${valNiveau?.date_validation ? new Date(valNiveau.date_validation).toLocaleDateString('fr-FR') : '—'}.
+          </div>
+        </div>
+      </div>`;
+    } else {
+      html += `<div class="card-box">
+        <div class="card-head"><i class="fas fa-pen"></i><h3>Votre décision — ${LABEL_NIVEAU[NIVEAU]}</h3></div>
+        <div class="card-body">
+          <label class="field-label">Commentaire</label>
+          <textarea id="commentaire-input" placeholder="Rédigez vos observations sur ce rapport…"></textarea>
+          <div class="btn-row">
+            <button class="btn-rejeter" onclick="soumettreDecision('rejete')" id="btn-rejeter">
+              <i class="fas fa-times-circle"></i> Rejeter
+            </button>
+            <button class="btn-valider" onclick="soumettreDecision('valide')" id="btn-valider">
+              <i class="fas fa-check-circle"></i> Valider
+            </button>
+          </div>
+        </div>
+      </div>`;
+    }
+
+    document.getElementById('main-content').innerHTML = html;
+  }
+
+  async function soumettreDecision(statut) {
+    const commentaire = document.getElementById('commentaire-input')?.value?.trim() || '';
+    if (statut === 'rejete' && !commentaire) {
+      showToast('⚠️ Un commentaire est requis pour rejeter le rapport.');
+      return;
+    }
+
+    const btnV = document.getElementById('btn-valider');
+    const btnR = document.getElementById('btn-rejeter');
+    if (btnV) { btnV.disabled = true; btnV.innerHTML = '<i class="fas fa-spinner fa-spin"></i> En cours…'; }
+    if (btnR) btnR.disabled = true;
+
+    try {
+      const res = await fetch(`${API_URL}/validations/${RAPPORT_ID}/niveau/${NIVEAU}`, {
+        method : 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body   : JSON.stringify({ commentaire, statut })
+      });
+      const data = await res.json();
+      if (res.ok) {
+        showToast(data.message || '✅ Décision enregistrée !');
+        setTimeout(() => init(), 1500);
+      } else {
+        showToast('❌ ' + (data.detail || 'Erreur'));
+        if (btnV) { btnV.disabled = false; btnV.innerHTML = '<i class="fas fa-check-circle"></i> Valider'; }
+        if (btnR) btnR.disabled = false;
+      }
+    } catch {
+      showToast('❌ Serveur inaccessible');
+      if (btnV) { btnV.disabled = false; btnV.innerHTML = '<i class="fas fa-check-circle"></i> Valider'; }
+      if (btnR) btnR.disabled = false;
+    }
+  }
+
+  function erreurHTML(titre, msg) {
+    return `<div style="text-align:center;padding:60px;color:var(--text-muted)">
+      <i class="fas fa-exclamation-circle" style="font-size:36px;color:var(--red);display:block;margin-bottom:12px"></i>
+      <div style="font-size:16px;font-weight:800;color:var(--text-dark)">${titre}</div>
+      <div style="font-size:13px;margin-top:6px">${msg}</div>
+    </div>`;
+  }
+
+  function showToast(msg) {
+    const t = document.getElementById('toast');
+    document.getElementById('toast-msg').textContent = msg;
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 3500);
+  }
+
+  document.addEventListener('DOMContentLoaded', init);
+</script>
+
+</body>
+</html>
