@@ -146,7 +146,7 @@ def _template_email_mission(nom_inspecteur: str, mission: dict, token_acces: str
     reference   = mission.get("reference", "N/A")
     date_mission= mission.get("date_mission", "")
     chef        = mission.get("chef_mission", "")
-    type_ctrl   = mission.get("type_controle", "global").upper()
+    type_ctrl   = (mission.get("type_controle") or "global").upper()
     # FIX : le lien porte désormais un token prouvant l'identité du
     # destinataire — plus de dépendance à "qui est connecté sur ce
     # navigateur en ce moment".
