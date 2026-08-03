@@ -17,7 +17,7 @@ from utilisateurs import SECRET_KEY, ALGORITHM, creer_token_session
 
 router = APIRouter(prefix="/missions", tags=["Missions"])
 
-FRONTEND_URL = os.environ.get("FRONTEND_URL", "https://warm-macaron-146f8a.netlify.app")
+FRONTEND_URL = os.environ.get("FRONTEND_URL", "https://delicate-sunburst-fe5240.netlify.app")
 MAIL_USERNAME = os.environ.get("MAIL_USERNAME", "")
 MAIL_PASSWORD = os.environ.get("MAIL_PASSWORD", "")
 MAIL_FROM     = os.environ.get("MAIL_FROM", MAIL_USERNAME)

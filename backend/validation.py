@@ -8,7 +8,7 @@ import resend
 
 router = APIRouter(prefix="/validations", tags=["Validations"])
 
-FRONTEND_URL = os.environ.get("FRONTEND_URL", "https://warm-macaron-146f8a.netlify.app")
+FRONTEND_URL = os.environ.get("FRONTEND_URL", "https://delicate-sunburst-fe5240.netlify.app")
 
 STATUT_PAR_NIVEAU = {
     1: "en_attente_chef",
