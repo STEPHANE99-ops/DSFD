@@ -3001,15 +3001,20 @@ document.addEventListener('DOMContentLoaded', async () => {
   const id = new URLSearchParams(window.location.search).get('id');
 
   if (id) {
-    try {
-      const res = await fetch(`${API_URL}/missions/${id}`);
-      const mission = await res.json();
-      if (res.ok) {
-        document.getElementById('g-sfd').value      = mission.sfd || '';
-        document.getElementById('g-date').value     = mission.date_mission || '';
-        document.getElementById('g-ref').value      = mission.reference || '';
-        document.getElementById('g-chef').value     = mission.chef_mission || '';
-        document.getElementById('g-reviseur').value = mission.reviseur || '';
+  try {
+    const res = await fetch(`${API_URL}/missions/${id}`);
+    const mission = await res.json();
+    if (res.ok) {
+      document.getElementById('g-sfd').value      = mission.sfd || '';
+      document.getElementById('g-date').value     = mission.date_mission || '';
+      document.getElementById('g-ref').value      = mission.reference || '';
+      document.getElementById('g-chef').value     = mission.chef_mission || '';
+      document.getElementById('g-reviseur').value = mission.reviseur || '';
+
+      // ── FIX : réinjecte les données Infos SFD / Indicateurs & Suivi ──
+      if (typeof restaurerDonneesRapport === 'function') {
+        restaurerDonneesRapport(mission);
+      }
 
         if (mission.sfd) {
           document.getElementById('sfd-selected').innerHTML = `
@@ -3099,14 +3104,30 @@ async function enregistrerMission() {
 
   const id = new URLSearchParams(window.location.search).get("id");
 
-  // Collecter les données rapport
   let donnees_rapport = {};
   if (typeof collecterDonneesRapport === 'function') {
     donnees_rapport = collecterDonneesRapport();
   }
-  console.log('infos_sfd:', donnees_rapport.infos_sfd);
 
-  const payload = {
+  // FIX : "donnees_rapport_complet" n'existe pas côté backend (le modèle
+  // Pydantic n'a pas ce champ) — tout ce qui y était envoyé était donc
+  // silencieusement ignoré. On répartit maintenant les données vers les
+  // colonnes qui existent réellement : personnel, suivi_recommandations,
+  // et un "sac" indicateurs_financiers pour tout le reste (indicateurs
+  // d'activités, ressources/emplois, résultats, fonds propres, épargne,
+  // crédit, textes narratifs…).
+  const {
+    personnel,
+    suivi_recommandations_precedentes,
+    infos_sfd,
+    organes,
+    reunions,
+    ratios,
+    ...reste
+  } = donnees_rapport;
+
+
+   const payload = {
     sfd, date_mission, inspecteurs, chef_mission,
     reference    : document.getElementById("g-ref")?.value.trim()      || null,
     reviseur     : document.getElementById("g-reviseur")?.value.trim() || null,
@@ -3114,16 +3135,14 @@ async function enregistrerMission() {
     periode      : document.getElementById("g-periode")?.value.trim()  || null,
     statut       : "En attente",
     est_soumise  : false,
-    // ── Données pour les tableaux du rapport (champs déjà existants côté backend) ──
-    infos_sfd    : donnees_rapport.infos_sfd || null,
-    organes      : donnees_rapport.organes   || null,
-    reunions     : donnees_rapport.reunions  || null,
-    ratios       : donnees_rapport.ratios    || null,
-    // ── Toutes les nouvelles tables (indicateurs, suivi recomm., personnel,
-    //    ressources/emplois, résultats, fonds propres, épargne, crédit…)
-    //    regroupées dans un seul champ JSON — nécessite une colonne
-    //    "donnees_rapport_complet" (type jsonb) côté table missions ──
-    donnees_rapport_complet: donnees_rapport,
+    infos_sfd    : infos_sfd || null,
+    organes      : organes   || null,
+    reunions     : reunions  || null,
+    ratios       : ratios    || null,
+    personnel:              personnel && personnel.length ? personnel : null,
+    suivi_recommandations:  (suivi_recommandations_precedentes && suivi_recommandations_precedentes.length)
+                              ? suivi_recommandations_precedentes : null,
+    indicateurs_financiers: reste,
   };
 
   try {
@@ -4086,30 +4105,27 @@ function buildCameliSynthese(g) {
                       la grille des volets de contrôle
 ════════════════════════════════════════════ */
 function appliquerRestrictionsRole() {
-      if (typeof estChefMission !== 'function' || estChefMission()) return;
+  if (typeof estChefMission !== 'function' || estChefMission()) return;
 
-      // FIX : pour l'inspecteur, on grise UNIQUEMENT la carte
-      // « Nouvelle mission de contrôle » (.info-card). La carte
-      // « Infos SFD / Indicateurs » (.donnees-sfd-card) et les volets
-      // restent entièrement modifiables : l'inspecteur doit pouvoir
-      // remplir tous les autres champs.
-      const zone = document.querySelector('.info-card');
-      if (zone) {
-        zone.querySelectorAll('input, select, textarea, button').forEach(el => {
-          el.disabled = true;
-        });
-        zone.style.opacity = '0.6';
-        zone.style.pointerEvents = 'none';
-      }
+  function griserZone(zone) {
+    if (!zone) return;
+    zone.querySelectorAll('input, select, textarea, button').forEach(el => {
+      el.disabled = true;
+    });
+    zone.style.opacity = '0.6';
+    zone.style.pointerEvents = 'none';
+  }
 
-      // FIX : on NE masque PLUS le bouton « Enregistrer » — l'inspecteur en a
-      // besoin pour sauvegarder les informations qu'il complète (Infos SFD,
-      // indicateurs, etc.). Les champs grisés conservent leur valeur et sont
-      // renvoyés correctement au backend même désactivés.
+  // 1) Carte "Nouvelle mission de contrôle"
+  griserZone(document.querySelector('.info-card'));
 
-  // ── FIX : garde-fou pour ne jamais insérer le bandeau deux fois,
-  // puisque cette fonction est désormais appelée à plusieurs moments
-  // (avant ET après le chargement asynchrone des données de mission).
+  // 2) Carte "Données SFD pour le rapport" — on grise le CONTENU des
+  //    panneaux (pas les onglets), pour laisser l'inspecteur naviguer
+  //    et consulter les données en lecture seule.
+  document.querySelectorAll('.donnees-sfd-card .donnees-sfd-panel').forEach(panel => {
+    griserZone(panel);
+  });
+
   if (!document.getElementById('bandeau-mode-inspecteur')) {
     const header = document.querySelector('.page-header');
     if (header) {

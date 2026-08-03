@@ -63,7 +63,7 @@ function buildInfosGeneralesSFD() {
       <textarea id="sfd-activites" rows="2" placeholder="Ex : Collecte de l'épargne, octroi de crédits aux membres…"></textarea>
     </div>
     <div class="form-group-full" style="margin-top:10px">
-      <label>Évaluation institutionnelle</label>
+      <label>Évoluation institutionnelle</label>
       <textarea id="sfd-evaluation-institutionnelle" rows="3" placeholder="Ex : Appréciation générale du fonctionnement institutionnel du SFD…"></textarea>
     </div>
   `;
@@ -1319,4 +1319,266 @@ function collecterDonneesRapport() {
   };
 
   return data;
+
+
+
+
+  
 }
+
+/* ════════════════════════════════════════════
+   FIX — RESTAURATION DES DONNÉES DU RAPPORT
+   (symétrique de collecterDonneesRapport)
+════════════════════════════════════════════ */
+function restaurerDonneesRapport(mission) {
+  if (!mission) return;
+
+  // ── Table 2 — Infos générales SFD ──
+  const infos = mission.infos_sfd || {};
+  const mapInfos = {
+    'sfd-date-constitution': infos.date_constitution,
+    'sfd-date-rccm':         infos.date_rccm,
+    'sfd-num-rccm':          infos.num_rccm,
+    'sfd-date-agrement':     infos.date_agrement,
+    'sfd-num-agrement':      infos.num_agrement,
+    'sfd-situation-geo':     infos.situation_geo,
+    'sfd-date-demarrage':    infos.date_demarrage,
+    'sfd-adresse':           infos.adresse,
+    'sfd-contacts':          infos.contacts,
+    'sfd-nb-points':         infos.nb_points,
+    'sfd-activites':         infos.activites,
+    'sfd-evaluation-institutionnelle': infos.evaluation_institutionnelle,
+  };
+  Object.entries(mapInfos).forEach(([id, val]) => {
+    const el = document.getElementById(id);
+    if (el && val !== undefined && val !== null) el.value = val;
+  });
+
+  // ── Tables 3/11/12/13 — Membres des organes ──
+  const organes = mission.organes || {};
+  const remplirOrgane = (tbodyId, membres) => {
+    if (!membres || !membres.length) return;
+    while ((document.getElementById(tbodyId)?.rows.length || 0) < membres.length) {
+      ajouterMembreOrgane(tbodyId);
+    }
+    const tbody = document.getElementById(tbodyId);
+    membres.forEach((m, i) => {
+      const tr = tbody.rows[i];
+      if (!tr) return;
+      const inputs = tr.querySelectorAll('input');
+      const select = tr.querySelector('select');
+      if (inputs[0]) inputs[0].value = m.nom || '';
+      if (select)    select.value    = m.fonction || '';
+      if (inputs[1]) inputs[1].value = m.debut || '';
+      if (inputs[2]) inputs[2].value = m.fin || '';
+      if (inputs[3]) inputs[3].value = m.profession || '';
+      if (inputs[4]) inputs[4].value = m.contact || '';
+    });
+  };
+  remplirOrgane('tbody-ca', organes.ca);
+  remplirOrgane('tbody-cc', organes.cc);
+  remplirOrgane('tbody-cs', organes.cs);
+
+  // ── Personnel de l'institution ──
+  const personnel = mission.personnel || [];
+  if (personnel.length) {
+    while ((document.getElementById('tbody-personnel')?.rows.length || 0) < personnel.length) {
+      ajouterLignePersonnel();
+    }
+    const tbody = document.getElementById('tbody-personnel');
+    personnel.forEach((p, i) => {
+      const tr = tbody.rows[i];
+      if (!tr) return;
+      const inputs = tr.querySelectorAll('input');
+      const select = tr.querySelector('select');
+      if (inputs[0]) inputs[0].value = p.nom || '';
+      if (inputs[1]) inputs[1].value = p.fonction || '';
+      if (inputs[2]) inputs[2].value = p.date_embauche || '';
+      if (select)    select.value    = p.nature_contrat || '';
+    });
+  }
+
+  // ── Table 4 — Suivi des recommandations de la précédente mission ──
+  const suivi = mission.suivi_recommandations || [];
+  if (suivi.length) {
+    while ((document.getElementById('tbody-suivi-recomm-prec')?.rows.length || 0) < suivi.length) {
+      ajouterLigneRecommPrec();
+    }
+    const tbody = document.getElementById('tbody-suivi-recomm-prec');
+    suivi.forEach((s, i) => {
+      const tr = tbody.rows[i];
+      if (!tr) return;
+      const inputs = tr.querySelectorAll('input');
+      const select = tr.querySelector('select');
+      if (inputs[0]) inputs[0].value = s.recommandation || '';
+      if (select)    select.value    = s.statut || '';
+      if (inputs[1]) inputs[1].value = s.observations || '';
+    });
+  }
+
+  // ── Table 14 — Réunions ──
+  const reunions = mission.reunions;
+  if (reunions) {
+    (reunions.annees || []).forEach((a, i) => {
+      const el = document.getElementById(`reunion-annee${i + 1}`);
+      if (el && a) el.value = a;
+    });
+    (reunions.lignes || []).forEach((l, i) => {
+      ['a1', 'a2', 'a3', 'a4', 'total'].forEach(k => {
+        const el = document.getElementById(`reunion-${i}-${k}`);
+        if (el && l[k] !== undefined) el.value = l[k];
+      });
+    });
+  }
+
+  // ── Table 25 — Ratios prudentiels ──
+  const ratios = mission.ratios;
+  if (ratios) {
+    (ratios.periodes || []).forEach((p, i) => {
+      const el = document.getElementById(`ratio-p${i + 1}`);
+      if (el && p) el.value = p;
+    });
+    (ratios.lignes || []).forEach(l => {
+      ['p1', 'p2', 'p3', 'p4', 'obs'].forEach(k => {
+        const el = document.getElementById(`ratio-${l.num}-${k}`);
+        if (el && l[k] !== undefined) el.value = l[k];
+      });
+      if (typeof checkRatioConformite === 'function') checkRatioConformite(l.num);
+    });
+  }
+
+  // ── "Sac" indicateurs_financiers : toutes les autres tables ──
+  const bag = mission.indicateurs_financiers || {};
+
+  (bag.indicateurs_activites || []).forEach((r, i) => {
+    ['p1', 'p2', 'p3'].forEach(k => {
+      const el = document.getElementById(`indic-${i}-${k}`);
+      if (el && r[k] !== undefined) el.value = r[k];
+    });
+    const varEl = document.getElementById(`indic-${i}-var`);
+    if (varEl && r.variation !== undefined) varEl.value = r.variation;
+  });
+
+  (bag.evolution_ressources || []).forEach((r, i) => {
+    const m = document.getElementById(`ress-${i}-montant`);
+    const v = document.getElementById(`ress-${i}-var`);
+    if (m) m.value = r.montant || '';
+    if (v) v.value = r.variation || '';
+  });
+  (bag.evolution_emplois || []).forEach((r, i) => {
+    const m = document.getElementById(`empl-${i}-montant`);
+    const v = document.getElementById(`empl-${i}-var`);
+    if (m) m.value = r.montant || '';
+    if (v) v.value = r.variation || '';
+  });
+
+  (bag.resultats || []).forEach((r, i) => {
+    const m = document.getElementById(`resu-${i}-montant`);
+    const v = document.getElementById(`resu-${i}-var`);
+    if (m) m.value = r.montant || '';
+    if (v) v.value = r.variation || '';
+  });
+  (bag.fonds_propres || []).forEach((r, i) => {
+    ['p1', 'p2', 'p3'].forEach(k => {
+      const el = document.getElementById(`fprop-${i}-${k}`);
+      if (el && r[k] !== undefined) el.value = r[k];
+    });
+  });
+
+  const epgEl = document.getElementById('epg-politique-procedures');
+  if (epgEl && bag.epargne_politique_procedures) epgEl.value = bag.epargne_politique_procedures;
+  (bag.structure_epargne || []).forEach((r, i) => {
+    const el = document.getElementById(`strepg-${i}-montant`);
+    if (el) el.value = r.montant || '';
+  });
+
+  (bag.analyse_dossiers_credit || []).forEach((r, i) => {
+    const el = document.getElementById(`anacred-${i}`);
+    if (el) el.value = r.valeur || '';
+  });
+
+  if (bag.situation_globale_credit) {
+    (bag.situation_globale_credit.lignes || []).forEach((r, i) => {
+      const q  = document.getElementById(`sitcred-${i}-qte`);
+      const tq = document.getElementById(`sitcred-${i}-tauxq`);
+      const va = document.getElementById(`sitcred-${i}-val`);
+      const tv = document.getElementById(`sitcred-${i}-tauxv`);
+      if (q)  q.value  = r.quantite  || '';
+      if (tq) tq.value = r.taux_qte || '';
+      if (va) va.value = r.valeur   || '';
+      if (tv) tv.value = r.taux_val || '';
+    });
+    const par30 = document.getElementById('sitcred-par30');
+    const par90 = document.getElementById('sitcred-par90');
+    if (par30) par30.value = bag.situation_globale_credit.par30 || '';
+    if (par90) par90.value = bag.situation_globale_credit.par90 || '';
+  }
+
+  const remplirPretsLies = (tbodyId, lignes) => {
+    if (!lignes || !lignes.length) return;
+    while ((document.getElementById(tbodyId)?.rows.length || 0) < lignes.length) {
+      ajouterLignePretLie(tbodyId);
+    }
+    const tbody = document.getElementById(tbodyId);
+    lignes.forEach((l, i) => {
+      const tr = tbody.rows[i];
+      if (!tr) return;
+      const inputs = tr.querySelectorAll('input');
+      if (inputs[0]) inputs[0].value = l.titulaire || '';
+      if (inputs[1]) inputs[1].value = l.fonction_organe || '';
+      if (inputs[2]) inputs[2].value = l.montant_initial || '';
+      if (inputs[3]) inputs[3].value = l.montant_restant || '';
+      if (inputs[4]) inputs[4].value = l.epargne_nantie || '';
+      if (inputs[5]) inputs[5].value = l.risque_reel || '';
+      if (inputs[6]) inputs[6].value = l.retard_jours || '';
+    });
+  };
+  if (bag.prets_personnes_liees) {
+    remplirPretsLies('tbody-prets-dirigeants',    bag.prets_personnes_liees.dirigeants);
+    remplirPretsLies('tbody-prets-ex-dirigeants', bag.prets_personnes_liees.ex_dirigeants);
+    remplirPretsLies('tbody-prets-salaries',      bag.prets_personnes_liees.salaries);
+  }
+
+  (bag.dix_plus_gros_risques || []).forEach((r, i) => {
+    const tr = document.getElementById('tbody-10-gros-risques')?.rows[i];
+    if (!tr) return;
+    const inputs = tr.querySelectorAll('input');
+    if (inputs[0]) inputs[0].value = r.emprunteur || '';
+    if (inputs[1]) inputs[1].value = r.montant_initial || '';
+    if (inputs[2]) inputs[2].value = r.montant_restant || '';
+    if (inputs[3]) inputs[3].value = r.epargne_nantie || '';
+    if (inputs[4]) inputs[4].value = r.risque_reel || '';
+    if (inputs[5]) inputs[5].value = r.retard_jours || '';
+  });
+  (bag.creances_virees_perte || []).forEach((r, i) => {
+    const p1 = document.getElementById(`crperte-${i}-p1`);
+    const p2 = document.getElementById(`crperte-${i}-p2`);
+    if (p1) p1.value = r.p1 || '';
+    if (p2) p2.value = r.p2 || '';
+  });
+
+  if (bag.taux_usure && bag.taux_usure.length) {
+    while ((document.getElementById('tbody-taux-usure')?.rows.length || 0) < bag.taux_usure.length) {
+      ajouterLigneTauxUsure();
+    }
+    const tbody = document.getElementById('tbody-taux-usure');
+    bag.taux_usure.forEach((r, i) => {
+      const tr = tbody.rows[i];
+      if (!tr) return;
+      const inputs = tr.querySelectorAll('input');
+      if (inputs[0]) inputs[0].value = r.emprunteur || '';
+      if (inputs[1]) inputs[1].value = r.montant_pret || '';
+      if (inputs[2]) inputs[2].value = r.taux_annuel || '';
+      if (inputs[3]) inputs[3].value = r.nb_echeances || '';
+      if (inputs[4]) inputs[4].value = r.teg || '';
+    });
+  }
+
+  if (bag.narratifs) {
+    Object.entries(bag.narratifs).forEach(([key, val]) => {
+      const el = document.getElementById(`narr-${key}`);
+      if (el && val) el.value = val;
+    });
+  }
+}
+
