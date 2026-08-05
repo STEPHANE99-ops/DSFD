@@ -1,5 +1,26 @@
 // js/rapport.js
 
+// Libellés des types de contrôle / rapport
+const TYPE_RAPPORT_LABELS = {
+    global : "Mission globale",
+    suivi  : "Suivi recommandations",
+    lbcft  : "LBC/FT/FP",
+    cameli : "Rapport CAMELI",
+};
+
+// Type de rapport actuellement sélectionné (carte), ou null si aucune carte
+function typeRapportSelectionne() {
+    const selectedCard = document.querySelector(".report-type-card.selected");
+    if (!selectedCard) return null;
+    const typeMap = {
+        "Mission globale"       : "global",
+        "Suivi recommandations" : "suivi",
+        "LBC/FT/FP"             : "lbcft",
+        "Rapport CAMELI"        : "cameli"
+    };
+    return typeMap[selectedCard.querySelector(".rt-name")?.textContent.trim()] || "global";
+}
+
 async function loadMissionsForReport() {
     const select = document.getElementById("mission-select");
     if (!select) return;
@@ -7,14 +28,47 @@ async function loadMissionsForReport() {
     try {
         const res = await fetch(`${API_URL}/missions/`);
         const data = await res.json();
-        select.innerHTML = `<option value="">-- Sélectionner une mission --</option>`;
-        (data.missions || []).forEach(m => {
-            const opt = document.createElement("option");
-            opt.value = m.id;
-            opt.textContent = `${m.reference || 'Sans ref'} — ${m.sfd}`;
-            select.appendChild(opt);
-        });
+        // FIX : mémoriser la liste complète pour pouvoir filtrer par type
+        window._missionsRapport = data.missions || [];
+        filtrerMissionsSelonType();
     } catch (e) { console.error(e); }
+}
+
+// FIX : le menu "Mission concernée" n'affiche que les missions dont le
+// type de contrôle correspond à la carte sélectionnée. Une mission de
+// type "Contrôle global" ne peut donner qu'un rapport global, etc.
+function filtrerMissionsSelonType() {
+    const select = document.getElementById("mission-select");
+    if (!select) return;
+
+    const type = typeRapportSelectionne();
+    const valeurActuelle = select.value;
+
+    const missions = (window._missionsRapport || []).filter(m => {
+        if (!type) return true; // aucune carte sélectionnée → tout afficher
+        return (m.type_controle || "global") === type;
+    });
+
+    select.innerHTML = `<option value="">-- Sélectionner une mission --</option>`;
+    missions.forEach(m => {
+        const opt = document.createElement("option");
+        opt.value = m.id;
+        opt.textContent = `${m.reference || 'Sans ref'} — ${m.sfd}`;
+        select.appendChild(opt);
+    });
+
+    // Conserver la sélection si elle est toujours compatible
+    if (missions.some(m => String(m.id) === String(valeurActuelle))) {
+        select.value = valeurActuelle;
+    }
+}
+
+// FIX : redéfinit selectType (chargé après app.js, donc prioritaire)
+// pour refiltrer les missions à chaque changement de carte.
+function selectType(card) {
+    document.querySelectorAll(".report-type-card").forEach(c => c.classList.remove("selected"));
+    card.classList.add("selected");
+    filtrerMissionsSelonType();
 }
 
 async function genererRapport() {
@@ -32,10 +86,19 @@ async function genererRapport() {
     };
     const type_rapport = selectedCard
         ? typeMap[selectedCard.querySelector(".rt-name")?.textContent.trim()] || "global"
-        : "global";
+        : null;
 
-    if (!missionId) { alert("⚠️ Veuillez sélectionner une mission.");        return; }
-    if (!format)    { alert("⚠️ Veuillez sélectionner un format.");          return; }
+    if (!type_rapport) { alert("⚠️ Veuillez sélectionner un type de rapport."); return; }
+    if (!missionId)    { alert("⚠️ Veuillez sélectionner une mission.");        return; }
+    if (!format)       { alert("⚠️ Veuillez sélectionner un format.");          return; }
+
+    // FIX : le type de rapport doit correspondre au type de contrôle de la mission
+    const mission = (window._missionsRapport || []).find(m => String(m.id) === String(missionId));
+    const typeMission = mission ? (mission.type_controle || "global") : null;
+    if (typeMission && typeMission !== type_rapport) {
+        alert(`❌ Cette mission est de type « ${TYPE_RAPPORT_LABELS[typeMission] || typeMission} ».\nVous ne pouvez générer que ce type de rapport pour cette mission.`);
+        return;
+    }
 
     const btn = document.querySelector(".btn-primary");
     const originalText = btn?.innerHTML;

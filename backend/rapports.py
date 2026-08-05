@@ -91,6 +91,24 @@ def generer_rapport(data: RapportModel):
         raise HTTPException(404, "Mission introuvable")
 
     mission   = mission_res.data[0]
+
+    # FIX : le type de rapport demandé doit correspondre au type de contrôle
+    # de la mission (une mission "Contrôle global" ne peut produire qu'un
+    # rapport global, une mission CAMELI qu'un rapport CAMELI, etc.)
+    type_mission = mission.get("type_controle") or "global"
+    type_demande = data.type_rapport or "global"
+    if type_demande != type_mission:
+        labels = {
+            "global": "Mission globale", "suivi": "Suivi recommandations",
+            "lbcft": "LBC/FT/FP", "cameli": "Rapport CAMELI",
+        }
+        raise HTTPException(
+            400,
+            f"Type de rapport incompatible : cette mission est de type "
+            f"« {labels.get(type_mission, type_mission)} ». "
+            f"Seul ce type de rapport peut être généré pour cette mission."
+        )
+
     reference = f"RAP-{datetime.now().strftime('%Y%m%d-%H%M%S')}"
 
     # 2. Récupérer tous les volets validés de la mission

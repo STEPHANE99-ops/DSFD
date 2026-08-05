@@ -63,12 +63,13 @@ function buildCreditTables(g) {
       <i class="fas fa-database"></i> Tableau — Ressources (F CFA)
     </div>
     <p style="font-size:12px;color:var(--text-muted);margin-bottom:10px">
-      Renseignez les montants pour les 3 dernières périodes contrôlées.
+      Renseignez les montants pour les périodes contrôlées (la période 4 est facultative).
     </p>
-    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:12px">
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:12px">
       <div class="form-group-full"><label>Période 1</label><input type="text" id="res-periode1" placeholder="Ex : 31/12/2022"/></div>
       <div class="form-group-full"><label>Période 2</label><input type="text" id="res-periode2" placeholder="Ex : 31/12/2023"/></div>
       <div class="form-group-full"><label>Période 3</label><input type="text" id="res-periode3" placeholder="Ex : 31/12/2024"/></div>
+      <div class="form-group-full"><label>Période 4 <span style="font-weight:400;color:var(--text-muted)">(facultatif)</span></label><input type="text" id="res-periode4" placeholder="Optionnel"/></div>
     </div>
     <div style="overflow-x:auto">
       <table class="dyn-table" id="tbl-ressources">
@@ -78,6 +79,7 @@ function buildCreditTables(g) {
             <th style="width:150px">Période 1 (F CFA)</th>
             <th style="width:150px">Période 2 (F CFA)</th>
             <th style="width:150px">Période 3 (F CFA)</th>
+            <th style="width:150px">Période 4 (F CFA)</th>
           </tr>
         </thead>
         <tbody>
@@ -99,12 +101,14 @@ function buildCreditTables(g) {
             <td><input type="text" id="${id}-p1" placeholder="0" style="width:100%;text-align:right"/></td>
             <td><input type="text" id="${id}-p2" placeholder="0" style="width:100%;text-align:right"/></td>
             <td><input type="text" id="${id}-p3" placeholder="0" style="width:100%;text-align:right"/></td>
+            <td><input type="text" id="${id}-p4" placeholder="0" style="width:100%;text-align:right"/></td>
           </tr>`).join('')}
           <tr style="background:#F8FAFC;font-weight:700">
             <td>Total</td>
             <td><input type="text" id="res-total-p1" placeholder="0" style="width:100%;text-align:right;font-weight:700"/></td>
             <td><input type="text" id="res-total-p2" placeholder="0" style="width:100%;text-align:right;font-weight:700"/></td>
             <td><input type="text" id="res-total-p3" placeholder="0" style="width:100%;text-align:right;font-weight:700"/></td>
+            <td><input type="text" id="res-total-p4" placeholder="0" style="width:100%;text-align:right;font-weight:700"/></td>
           </tr>
         </tbody>
       </table>
@@ -124,6 +128,7 @@ function buildCreditTables(g) {
             <th style="width:150px">Période 1</th>
             <th style="width:150px">Période 2</th>
             <th style="width:150px">Période 3</th>
+            <th style="width:150px">Période 4</th>
           </tr>
         </thead>
         <tbody>
@@ -141,6 +146,7 @@ function buildCreditTables(g) {
             <td><input type="text" id="${id}-p1" placeholder="0" style="width:100%;text-align:right"${calc ? ' readonly' : ''}/></td>
             <td><input type="text" id="${id}-p2" placeholder="0" style="width:100%;text-align:right"${calc ? ' readonly' : ''}/></td>
             <td><input type="text" id="${id}-p3" placeholder="0" style="width:100%;text-align:right"${calc ? ' readonly' : ''}/></td>
+            <td><input type="text" id="${id}-p4" placeholder="0" style="width:100%;text-align:right"${calc ? ' readonly' : ''}/></td>
           </tr>`).join('')}
         </tbody>
       </table>
@@ -400,6 +406,7 @@ function buildCreditTables(g) {
             <th style="width:150px">Période 1</th>
             <th style="width:150px">Période 2</th>
             <th style="width:150px">Période 3</th>
+            <th style="width:150px">Période 4</th>
           </tr>
         </thead>
         <tbody>
@@ -416,6 +423,7 @@ function buildCreditTables(g) {
             <td><input type="text" id="${id}-p1" placeholder="0" style="width:100%;text-align:right"${calc ? ' readonly' : ''} oninput="calcTauxPerte()"/></td>
             <td><input type="text" id="${id}-p2" placeholder="0" style="width:100%;text-align:right"${calc ? ' readonly' : ''} oninput="calcTauxPerte()"/></td>
             <td><input type="text" id="${id}-p3" placeholder="0" style="width:100%;text-align:right"${calc ? ' readonly' : ''} oninput="calcTauxPerte()"/></td>
+            <td><input type="text" id="${id}-p4" placeholder="0" style="width:100%;text-align:right"${calc ? ' readonly' : ''} oninput="calcTauxPerte()"/></td>
           </tr>`).join('')}
         </tbody>
       </table>
@@ -529,7 +537,7 @@ function calcTotauxDirigeants() {
 }
 
 function calcTauxPerte() {
-  ['p1','p2','p3'].forEach(p => {
+  ['p1','p2','p3','p4'].forEach(p => {
     const mnt    = parseFloat((document.getElementById(`perte-mnt-${p}`)?.value   || '0').replace(/\s/g,'').replace(',','.')) || 0;
     const recup  = parseFloat((document.getElementById(`perte-recup-${p}`)?.value || '0').replace(/\s/g,'').replace(',','.')) || 0;
     const enc    = parseFloat((document.getElementById(`perte-enc-${p}`)?.value   || '0').replace(/\s/g,'').replace(',','.')) || 0;
@@ -630,6 +638,7 @@ function collecterTablesCrédit() {
       document.getElementById('res-periode1')?.value || '',
       document.getElementById('res-periode2')?.value || '',
       document.getElementById('res-periode3')?.value || '',
+      document.getElementById('res-periode4')?.value || '',
     ],
     lignes: [
       'res-inst-fin','res-cpt-ord-cred','res-dat','res-dep-gar','res-emprunts',
@@ -640,11 +649,13 @@ function collecterTablesCrédit() {
       p1: document.getElementById(`${id}-p1`)?.value || '',
       p2: document.getElementById(`${id}-p2`)?.value || '',
       p3: document.getElementById(`${id}-p3`)?.value || '',
+      p4: document.getElementById(`${id}-p4`)?.value || '',
     })),
     totaux: {
       p1: document.getElementById('res-total-p1')?.value || '',
       p2: document.getElementById('res-total-p2')?.value || '',
       p3: document.getElementById('res-total-p3')?.value || '',
+      p4: document.getElementById('res-total-p4')?.value || '',
     }
   };
 
@@ -654,6 +665,7 @@ function collecterTablesCrédit() {
       p1: document.getElementById(`${id}-p1`)?.value || '',
       p2: document.getElementById(`${id}-p2`)?.value || '',
       p3: document.getElementById(`${id}-p3`)?.value || '',
+      p4: document.getElementById(`${id}-p4`)?.value || '',
     };
     return acc;
   }, {});
@@ -752,6 +764,7 @@ function collecterTablesCrédit() {
       p1: document.getElementById(`${id}-p1`)?.value || '',
       p2: document.getElementById(`${id}-p2`)?.value || '',
       p3: document.getElementById(`${id}-p3`)?.value || '',
+      p4: document.getElementById(`${id}-p4`)?.value || '',
     };
     return acc;
   }, {});

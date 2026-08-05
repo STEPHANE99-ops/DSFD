@@ -241,7 +241,7 @@ function buildRatiosPrudentiels() {
       <span style="font-size:11px;color:var(--text-muted);font-weight:400;margin-left:8px">(Table 25 du rapport)</span>
     </div>
     <p style="font-size:12px;color:var(--text-muted);margin-bottom:10px">
-      Saisissez les valeurs calculées pour les 3 dernières périodes et les observations. Ces périodes sont partagées avec le tableau des réunions ci-dessus.
+      Saisissez les valeurs calculées pour les périodes contrôlées (la période 4 est facultative) et les observations. Ces périodes sont partagées avec le tableau des réunions ci-dessus.
     </p>
     <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:10px;margin-bottom:10px">
       <div class="form-group-full"><label>Période 1</label><input type="text" id="ratio-p1" placeholder="Ex : 31/12/2022" oninput="syncPeriodes(1, this.value)"/></div>
@@ -471,6 +471,7 @@ function buildIndicateursActivites() {
             <th style="width:110px">Période 1</th>
             <th style="width:110px">Période 2</th>
             <th style="width:110px">Période 3</th>
+            <th style="width:110px">Période 4</th>
             <th style="width:100px">Variation (%)</th>
           </tr>
         </thead>
@@ -481,6 +482,7 @@ function buildIndicateursActivites() {
             <td><input type="text" id="indic-${i}-p1" style="width:100%;text-align:center"/></td>
             <td><input type="text" id="indic-${i}-p2" style="width:100%;text-align:center"/></td>
             <td><input type="text" id="indic-${i}-p3" style="width:100%;text-align:center"/></td>
+            <td><input type="text" id="indic-${i}-p4" style="width:100%;text-align:center"/></td>
             <td><input type="text" id="indic-${i}-var" style="width:100%;text-align:center"/></td>
           </tr>`).join('')}
         </tbody>
@@ -722,6 +724,7 @@ function buildFondsPropres() {
             <th style="width:120px">Période 1</th>
             <th style="width:120px">Période 2</th>
             <th style="width:120px">Période 3</th>
+            <th style="width:120px">Période 4</th>
           </tr>
         </thead>
         <tbody>
@@ -731,6 +734,7 @@ function buildFondsPropres() {
             <td><input type="text" id="fprop-${i}-p1" style="width:100%;text-align:center"/></td>
             <td><input type="text" id="fprop-${i}-p2" style="width:100%;text-align:center"/></td>
             <td><input type="text" id="fprop-${i}-p3" style="width:100%;text-align:center"/></td>
+            <td><input type="text" id="fprop-${i}-p4" style="width:100%;text-align:center"/></td>
           </tr>`).join('')}
         </tbody>
       </table>
@@ -741,21 +745,70 @@ function buildFondsPropres() {
 /* ════════════════════════════════════════════
    SECTION 8 — Politique et structure de l'épargne
    VOLET ÉPARGNE
+   (Nouveau modèle : 4 tableaux du canevas)
 ════════════════════════════════════════════ */
-const LIGNES_STRUCTURE_EPARGNE = [
-  { lib: "Ressources des institutions financières", groupe: true },
-  { lib: "Comptes ordinaires créditeurs" },
-  { lib: "Dépôts à terme" },
-  { lib: "Dépôts de garantie reçus" },
-  { lib: "Emprunts" },
-  { lib: "Dépôts des membres/clients", groupe: true },
-  { lib: "Comptes ordinaires créditeurs " },
-  { lib: "DAT reçus" },
-  { lib: "Comptes d'épargne à régime spécial" },
-  { lib: "Dépôts de garantie" },
-  { lib: "Autres sommes dues" },
-  { lib: "Total", total: true },
+const EPG_NATURE = [
+  "Dépôt à vue", "Compte courant", "Dépôt à terme",
+  "Dépôt de garantie", "Dépôt plan Épargne",
 ];
+
+const EPG_TRANCHES = [
+  "Inférieur à 50 000", "50 001 à 100 000", "100 001 à 200 000",
+  "200 001 à 500 000", "500 001 à 1 000 000", "Plus de 1 000 000",
+];
+
+const EPG_ACTIVITE = [
+  { lib: "Comptes actifs", groupe: true },
+  { lib: "Comptes à solde négatif", sub: true },
+  { lib: "Comptes à solde nul", sub: true },
+  { lib: "Comptes à solde positif", sub: true },
+  { lib: "Comptes inactifs", groupe: true },
+  { lib: "Comptes à solde négatif ", sub: true },
+  { lib: "Comptes à solde nul ", sub: true },
+  { lib: "Comptes à solde positif ", sub: true },
+  { lib: "Comptes dormants", groupe: true },
+  { lib: "Comptes clôturés", groupe: true },
+];
+
+// En-tête à deux niveaux commun aux tableaux de structure de l'épargne
+function epgThead() {
+  return `
+        <thead>
+          <tr>
+            <th rowspan="2" style="vertical-align:middle">Libellés</th>
+            <th colspan="2" style="text-align:center">Nombre de comptes</th>
+            <th colspan="2" style="text-align:center">Montant du solde cumulé</th>
+          </tr>
+          <tr>
+            <th style="width:100px;text-align:center">Quantité</th>
+            <th style="width:90px;text-align:center">Taux (%)</th>
+            <th style="width:150px;text-align:center">Valeur (F CFA)</th>
+            <th style="width:90px;text-align:center">Taux (%)</th>
+          </tr>
+        </thead>`;
+}
+
+function epgRow(prefix, i, label, style) {
+  return `
+          <tr${style || ''}>
+            <td style="font-size:12.5px">${label}</td>
+            <td><input type="text" id="${prefix}-${i}-qte" style="width:100%;text-align:center"/></td>
+            <td><input type="text" id="${prefix}-${i}-tauxq" style="width:100%;text-align:center"/></td>
+            <td><input type="text" id="${prefix}-${i}-val" style="width:100%;text-align:right"/></td>
+            <td><input type="text" id="${prefix}-${i}-tauxv" style="width:100%;text-align:center"/></td>
+          </tr>`;
+}
+
+function epgTotalRow(prefix) {
+  return `
+          <tr style="background:#F8FAFC;font-weight:700">
+            <td>Total</td>
+            <td><input type="text" id="${prefix}-total-qte" style="width:100%;text-align:center;font-weight:700"/></td>
+            <td><input type="text" id="${prefix}-total-tauxq" style="width:100%;text-align:center;font-weight:700"/></td>
+            <td><input type="text" id="${prefix}-total-val" style="width:100%;text-align:right;font-weight:700"/></td>
+            <td><input type="text" id="${prefix}-total-tauxv" style="width:100%;text-align:center;font-weight:700"/></td>
+          </tr>`;
+}
 
 function buildStructureEpargne() {
   return `
@@ -768,26 +821,102 @@ function buildStructureEpargne() {
       <textarea id="epg-politique-procedures" rows="3" placeholder="Décrivez la politique et les procédures de collecte de l'épargne…"></textarea>
     </div>
 
+    <!-- Tableau 1 — Structure selon la nature des comptes -->
     <div class="sub-title" style="margin-top:22px">
       <i class="fas fa-piggy-bank"></i> Structure de l'épargne selon la nature des comptes
-      <span style="font-size:11px;color:var(--text-muted);font-weight:400;margin-left:8px">(en attente du nouveau modèle — table provisoire)</span>
+      <span style="font-size:11px;color:var(--text-muted);font-weight:400;margin-left:8px">(Table du rapport — Situation de l'épargne)</span>
     </div>
     <div style="overflow-x:auto">
-      <table class="dyn-table" id="tbl-structure-epargne">
-        <thead>
-          <tr>
-            <th>Ressources</th>
-            <th style="width:150px">Montants (F CFA)</th>
-          </tr>
-        </thead>
+      <table class="dyn-table" id="tbl-epg-nature">
+        ${epgThead()}
         <tbody>
-          ${LIGNES_STRUCTURE_EPARGNE.map((l, i) => `
-          <tr${l.groupe || l.total ? ' style="background:#F8FAFC"' : ''}>
-            <td style="font-size:12.5px${l.groupe || l.total ? ';font-weight:700' : ''}">${l.lib}</td>
-            <td><input type="text" id="strepg-${i}-montant" style="width:100%;text-align:center"/></td>
-          </tr>`).join('')}
+          ${EPG_NATURE.map((l, i) => epgRow('epgnat', i, l)).join('')}
+          ${epgTotalRow('epgnat')}
         </tbody>
       </table>
+    </div>
+    <div class="form-group-full" style="margin-top:10px">
+      <label>Commentaire / analyse</label>
+      <textarea id="epgnat-comm" rows="3" placeholder="Analyse de la structure de l'épargne selon la nature des comptes (concentration, risque de liquidité…)"></textarea>
+    </div>
+
+    <!-- Tableau 2 — Structure par tranche -->
+    <div class="sub-title" style="margin-top:22px">
+      <i class="fas fa-layer-group"></i> Structure de l'épargne par tranche
+    </div>
+    <div style="overflow-x:auto">
+      <table class="dyn-table" id="tbl-epg-tranches">
+        ${epgThead()}
+        <tbody>
+          ${EPG_TRANCHES.map((l, i) => epgRow('epgtr', i, l)).join('')}
+          ${epgTotalRow('epgtr')}
+        </tbody>
+      </table>
+    </div>
+    <div class="form-group-full" style="margin-top:10px">
+      <label>Commentaire / analyse</label>
+      <textarea id="epgtr-comm" rows="3" placeholder="Analyse de la répartition de l'épargne par tranche (petits épargnants, concentration…)"></textarea>
+    </div>
+
+    <!-- Tableau 3 — Situation selon l'activité des comptes -->
+    <div class="sub-title" style="margin-top:22px">
+      <i class="fas fa-toggle-on"></i> Situation de l'épargne selon l'activité des comptes
+    </div>
+    <div style="overflow-x:auto">
+      <table class="dyn-table" id="tbl-epg-activite">
+        ${epgThead()}
+        <tbody>
+          ${EPG_ACTIVITE.map((l, i) => epgRow('epgact', i, l.sub ? `<em style="padding-left:14px">${l.lib}</em>` : l.lib, l.groupe ? ' style="background:#F8FAFC;font-weight:700"' : '')).join('')}
+          ${epgTotalRow('epgact')}
+        </tbody>
+      </table>
+    </div>
+    <div class="form-group-full" style="margin-top:10px">
+      <label>Commentaire / analyse</label>
+      <textarea id="epgact-comm" rows="3" placeholder="Analyse de l'activité des comptes (comptes actifs, soldes nuls, comptes inactifs, clôtures…)"></textarea>
+    </div>
+
+    <!-- Tableau 4 — Dix plus gros épargnants -->
+    <div class="sub-title" style="margin-top:22px">
+      <i class="fas fa-users"></i> Situation des dix plus gros épargnants
+    </div>
+    <div style="overflow-x:auto">
+      <table class="dyn-table" id="tbl-epg-gros">
+        <thead>
+          <tr>
+            <th rowspan="2" style="width:44px;vertical-align:middle;text-align:center">N°</th>
+            <th rowspan="2" style="vertical-align:middle">Nom et prénoms / Désignation</th>
+            <th colspan="2" style="text-align:center">Épargne</th>
+          </tr>
+          <tr>
+            <th style="width:160px;text-align:center">Montant (F CFA)</th>
+            <th style="width:90px;text-align:center">Taux (%)</th>
+          </tr>
+        </thead>
+        <tbody id="tbody-epg-gros">
+          ${[0,1,2,3,4,5,6,7,8,9].map(n => `
+          <tr>
+            <td style="text-align:center">${n + 1}</td>
+            <td><input type="text" id="epggros-${n}-nom" placeholder="Nom / désignation…" style="width:100%"/></td>
+            <td><input type="text" id="epggros-${n}-mnt" style="width:100%;text-align:right"/></td>
+            <td><input type="text" id="epggros-${n}-taux" style="width:100%;text-align:center"/></td>
+          </tr>`).join('')}
+          <tr style="background:#F8FAFC;font-weight:700">
+            <td colspan="2">Encours des 10 plus gros épargnants</td>
+            <td><input type="text" id="epggros-enc10-mnt" style="width:100%;text-align:right;font-weight:700"/></td>
+            <td><input type="text" id="epggros-enc10-taux" style="width:100%;text-align:center;font-weight:700"/></td>
+          </tr>
+          <tr style="background:#F8FAFC;font-weight:700">
+            <td colspan="2">Encours global de l'épargne</td>
+            <td><input type="text" id="epggros-global-mnt" style="width:100%;text-align:right;font-weight:700"/></td>
+            <td><input type="text" id="epggros-global-taux" style="width:100%;text-align:center;font-weight:700"/></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="form-group-full" style="margin-top:10px">
+      <label>Commentaire / analyse</label>
+      <textarea id="epggros-comm" rows="3" placeholder="Analyse de la concentration de l'épargne sur les plus gros déposants…"></textarea>
     </div>
   `;
 }
@@ -993,7 +1122,7 @@ function buildSuivi10PlusGrosRisques() {
     <div style="overflow-x:auto">
       <table class="dyn-table" id="tbl-creances-perte">
         <thead>
-          <tr><th>Rubriques</th><th style="width:120px">Période 1</th><th style="width:120px">Période 2</th></tr>
+          <tr><th>Rubriques</th><th style="width:110px">Période 1</th><th style="width:110px">Période 2</th><th style="width:110px">Période 3</th><th style="width:110px">Période 4</th></tr>
         </thead>
         <tbody>
           ${[
@@ -1008,6 +1137,8 @@ function buildSuivi10PlusGrosRisques() {
             <td style="font-size:12.5px">${l}</td>
             <td><input type="text" id="crperte-${i}-p1" style="width:100%;text-align:center"/></td>
             <td><input type="text" id="crperte-${i}-p2" style="width:100%;text-align:center"/></td>
+            <td><input type="text" id="crperte-${i}-p3" style="width:100%;text-align:center"/></td>
+            <td><input type="text" id="crperte-${i}-p4" style="width:100%;text-align:center"/></td>
           </tr>`).join('')}
         </tbody>
       </table>
@@ -1108,6 +1239,7 @@ function collecterDonneesRapport() {
     p1: document.getElementById(`indic-${i}-p1`)?.value || '',
     p2: document.getElementById(`indic-${i}-p2`)?.value || '',
     p3: document.getElementById(`indic-${i}-p3`)?.value || '',
+    p4: document.getElementById(`indic-${i}-p4`)?.value || '',
     variation: document.getElementById(`indic-${i}-var`)?.value || '',
   }));
 
@@ -1213,14 +1345,50 @@ function collecterDonneesRapport() {
     p1: document.getElementById(`fprop-${i}-p1`)?.value || '',
     p2: document.getElementById(`fprop-${i}-p2`)?.value || '',
     p3: document.getElementById(`fprop-${i}-p3`)?.value || '',
+    p4: document.getElementById(`fprop-${i}-p4`)?.value || '',
   }));
 
-  // Section 8 — Épargne (politique + structure)
+  // Section 8 — Épargne (politique + 4 tableaux du canevas)
   data.epargne_politique_procedures = document.getElementById('epg-politique-procedures')?.value || '';
-  data.structure_epargne = LIGNES_STRUCTURE_EPARGNE.filter(l=>!l.groupe && !l.total).map((l, i) => ({
-    libelle: l.lib,
-    montant: document.getElementById(`strepg-${i}-montant`)?.value || '',
-  }));
+
+  const collecterTableEpg = (prefix, libelles) => ({
+    lignes: libelles.map((lib, i) => ({
+      libelle: typeof lib === 'string' ? lib : lib.lib,
+      qte:   document.getElementById(`${prefix}-${i}-qte`)?.value || '',
+      tauxq: document.getElementById(`${prefix}-${i}-tauxq`)?.value || '',
+      val:   document.getElementById(`${prefix}-${i}-val`)?.value || '',
+      tauxv: document.getElementById(`${prefix}-${i}-tauxv`)?.value || '',
+    })),
+    total: {
+      qte:   document.getElementById(`${prefix}-total-qte`)?.value || '',
+      tauxq: document.getElementById(`${prefix}-total-tauxq`)?.value || '',
+      val:   document.getElementById(`${prefix}-total-val`)?.value || '',
+      tauxv: document.getElementById(`${prefix}-total-tauxv`)?.value || '',
+    },
+    commentaire: document.getElementById(`${prefix}-comm`)?.value || '',
+  });
+
+  data.structure_epargne = {
+    nature:   collecterTableEpg('epgnat', EPG_NATURE),
+    tranches: collecterTableEpg('epgtr',  EPG_TRANCHES),
+    activite: collecterTableEpg('epgact', EPG_ACTIVITE),
+    gros_epargnants: {
+      lignes: [0,1,2,3,4,5,6,7,8,9].map(n => ({
+        nom:     document.getElementById(`epggros-${n}-nom`)?.value || '',
+        montant: document.getElementById(`epggros-${n}-mnt`)?.value || '',
+        taux:    document.getElementById(`epggros-${n}-taux`)?.value || '',
+      })),
+      encours_10: {
+        montant: document.getElementById('epggros-enc10-mnt')?.value || '',
+        taux:    document.getElementById('epggros-enc10-taux')?.value || '',
+      },
+      encours_global: {
+        montant: document.getElementById('epggros-global-mnt')?.value || '',
+        taux:    document.getElementById('epggros-global-taux')?.value || '',
+      },
+      commentaire: document.getElementById('epggros-comm')?.value || '',
+    },
+  };
 
   // 9.2 — Analyse des dossiers de crédit
   data.analyse_dossiers_credit = LIGNES_ANALYSE_CREDIT.map((l, i) => ({
@@ -1289,6 +1457,8 @@ function collecterDonneesRapport() {
     libelle: l,
     p1: document.getElementById(`crperte-${i}-p1`)?.value || '',
     p2: document.getElementById(`crperte-${i}-p2`)?.value || '',
+    p3: document.getElementById(`crperte-${i}-p3`)?.value || '',
+    p4: document.getElementById(`crperte-${i}-p4`)?.value || '',
   }));
 
   // 9.5 — Taux de l'usure
@@ -1451,7 +1621,7 @@ function restaurerDonneesRapport(mission) {
   const bag = mission.indicateurs_financiers || {};
 
   (bag.indicateurs_activites || []).forEach((r, i) => {
-    ['p1', 'p2', 'p3'].forEach(k => {
+    ['p1', 'p2', 'p3', 'p4'].forEach(k => {
       const el = document.getElementById(`indic-${i}-${k}`);
       if (el && r[k] !== undefined) el.value = r[k];
     });
@@ -1479,7 +1649,7 @@ function restaurerDonneesRapport(mission) {
     if (v) v.value = r.variation || '';
   });
   (bag.fonds_propres || []).forEach((r, i) => {
-    ['p1', 'p2', 'p3'].forEach(k => {
+    ['p1', 'p2', 'p3', 'p4'].forEach(k => {
       const el = document.getElementById(`fprop-${i}-${k}`);
       if (el && r[k] !== undefined) el.value = r[k];
     });
@@ -1487,10 +1657,54 @@ function restaurerDonneesRapport(mission) {
 
   const epgEl = document.getElementById('epg-politique-procedures');
   if (epgEl && bag.epargne_politique_procedures) epgEl.value = bag.epargne_politique_procedures;
-  (bag.structure_epargne || []).forEach((r, i) => {
-    const el = document.getElementById(`strepg-${i}-montant`);
-    if (el) el.value = r.montant || '';
-  });
+
+  // Nouveau format (objet) — les anciennes missions (format tableau) sont ignorées
+  if (bag.structure_epargne && !Array.isArray(bag.structure_epargne)) {
+    const se = bag.structure_epargne;
+    const restaurerTableEpg = (prefix, table) => {
+      if (!table) return;
+      (table.lignes || []).forEach((r, i) => {
+        ['qte', 'tauxq', 'val', 'tauxv'].forEach(k => {
+          const el = document.getElementById(`${prefix}-${i}-${k}`);
+          if (el && r[k] !== undefined) el.value = r[k];
+        });
+      });
+      if (table.total) {
+        ['qte', 'tauxq', 'val', 'tauxv'].forEach(k => {
+          const el = document.getElementById(`${prefix}-total-${k}`);
+          if (el && table.total[k] !== undefined) el.value = table.total[k];
+        });
+      }
+      const comm = document.getElementById(`${prefix}-comm`);
+      if (comm && table.commentaire) comm.value = table.commentaire;
+    };
+    restaurerTableEpg('epgnat', se.nature);
+    restaurerTableEpg('epgtr',  se.tranches);
+    restaurerTableEpg('epgact', se.activite);
+
+    if (se.gros_epargnants) {
+      (se.gros_epargnants.lignes || []).forEach((r, n) => {
+        const nom  = document.getElementById(`epggros-${n}-nom`);
+        const mnt  = document.getElementById(`epggros-${n}-mnt`);
+        const taux = document.getElementById(`epggros-${n}-taux`);
+        if (nom)  nom.value  = r.nom || '';
+        if (mnt)  mnt.value  = r.montant || '';
+        if (taux) taux.value = r.taux || '';
+      });
+      const map = {
+        'epggros-enc10-mnt':   se.gros_epargnants.encours_10?.montant,
+        'epggros-enc10-taux':  se.gros_epargnants.encours_10?.taux,
+        'epggros-global-mnt':  se.gros_epargnants.encours_global?.montant,
+        'epggros-global-taux': se.gros_epargnants.encours_global?.taux,
+      };
+      Object.entries(map).forEach(([id, val]) => {
+        const el = document.getElementById(id);
+        if (el && val !== undefined && val !== null) el.value = val;
+      });
+      const comm = document.getElementById('epggros-comm');
+      if (comm && se.gros_epargnants.commentaire) comm.value = se.gros_epargnants.commentaire;
+    }
+  }
 
   (bag.analyse_dossiers_credit || []).forEach((r, i) => {
     const el = document.getElementById(`anacred-${i}`);
@@ -1551,10 +1765,10 @@ function restaurerDonneesRapport(mission) {
     if (inputs[5]) inputs[5].value = r.retard_jours || '';
   });
   (bag.creances_virees_perte || []).forEach((r, i) => {
-    const p1 = document.getElementById(`crperte-${i}-p1`);
-    const p2 = document.getElementById(`crperte-${i}-p2`);
-    if (p1) p1.value = r.p1 || '';
-    if (p2) p2.value = r.p2 || '';
+    ['p1', 'p2', 'p3', 'p4'].forEach(k => {
+      const el = document.getElementById(`crperte-${i}-${k}`);
+      if (el && r[k] !== undefined) el.value = r[k];
+    });
   });
 
   if (bag.taux_usure && bag.taux_usure.length) {
@@ -1581,4 +1795,3 @@ function restaurerDonneesRapport(mission) {
     });
   }
 }
-
