@@ -63,7 +63,7 @@ function buildInfosGeneralesSFD() {
       <textarea id="sfd-activites" rows="2" placeholder="Ex : Collecte de l'épargne, octroi de crédits aux membres…"></textarea>
     </div>
     <div class="form-group-full" style="margin-top:10px">
-      <label>Évoluation institutionnelle</label>
+      <label>Évolution institutionnelle</label>
       <textarea id="sfd-evaluation-institutionnelle" rows="3" placeholder="Ex : Appréciation générale du fonctionnement institutionnel du SFD…"></textarea>
     </div>
   `;

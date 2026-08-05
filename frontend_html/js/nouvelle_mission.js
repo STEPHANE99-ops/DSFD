@@ -1,6 +1,9 @@
 /* ================================================
    DSFD — nouvelle_mission.js
    Logique complète : blocs, drawer, formulaires
+   (Version fusionnée : nouvelles activités détaillées
+    + correctifs cache volets, accès par lien, rôles,
+    inspecteurs, sauvegarde rapport)
    ================================================ */
 
 /* ════════════════════════════════════════════
@@ -71,7 +74,7 @@ const BLOCS = [
 
 const completed = new Set();
 
-// FIX : cache des données déjà saisies pour chaque volet (clé = volet_code) 
+// FIX : cache des données déjà saisies pour chaque volet (clé = volet_code)
 window._voletsCache = window._voletsCache || {};
 
 /* ════════════════════════════════════════════
@@ -135,7 +138,6 @@ function openBloc(i) {
   document.getElementById('overlay').classList.add('open');
   document.body.style.overflow = 'hidden';
   attachHandlers();
-
 
   // ── FIX : restaurer les données déjà saisies pour ce volet, si elles existent ──
   const donneesSauvegardees = window._voletsCache && window._voletsCache[b.id];
@@ -325,56 +327,60 @@ const SI_CTRL_POINTS = [
   "Acquisitions (études, cahier des charges, comité de pilotage, tests)"
 ];
 
-const SI_ACTIVITES = [
-  { num: 1, titre: "Vérifier l'adéquation et la fiabilité du SIG aux besoins du SFD", items: [] },
-  { num: 2, titre: "Évaluer la conformité et la fiabilité de l'informatique", items: [
-    "S'assurer de l'existence d'un schéma directeur informatique",
-    "S'assurer de la qualité et suffisance des ressources humaines chargées du SI",
-    "S'assurer de la concision et exhaustivité de l'information produite (BCEAO)",
-    "S'assurer de l'impossibilité de modifier une journée comptable clôturée",
-    "S'assurer de la production automatisée des documents de synthèse (BCEAO)",
-    "S'assurer de la production automatisée des états de gestion"
-  ]},
-  { num: 3, titre: "Évaluer la sécurité physique", items: [
-    "Vérifier qu'une liste exhaustive des personnes ayant accès aux locaux est constituée",
-    "S'assurer qu'un contrôle d'identité est effectué avant l'accès aux locaux",
-    "S'assurer que les heures d'accès sont dûment stipulées",
-    "Contrôler l'existence de contrats d'assurance et protections incendie adéquates",
-    "S'assurer que le serveur est placé au centre des locaux l'abritant",
-    "S'assurer que logiciels, applicatifs et données sont conservés dans des armoires ignifugées",
-    "S'assurer qu'un double des fichiers est conservé à l'extérieur dans des coffres ignifugés",
-    "Veiller au respect de la norme de conservation extraterritoriale des fichiers"
-  ]},
-  { num: 4, titre: "Évaluer la sécurité logique", items: [
-    "S'assurer que l'accès au système est limité aux heures ouvrables stipulées",
-    "S'assurer de la traçabilité des accès au système",
-    "Contrôler l'existence d'un mot de passe ou code d'accès pour chaque utilisateur",
-    "Vérifier l'effectivité des habilitations pour chaque catégorie d'opération",
-    "S'assurer que les mots de passe sont régulièrement modifiés et confidentiels",
-    "S'assurer que lors du départ d'un agent, ses habilitations sont immédiatement supprimées",
-    "S'assurer que l'accès aux applications est interdit aux analystes/programmeurs sans autorisation",
-    "S'assurer que des procédures formelles garantissent l'intégrité des traitements",
-    "Vérifier que toutes les modifications de programme sont déclenchées par demande écrite autorisée",
-    "S'assurer que le SI permet la prise en compte des opérations après clôture"
-  ]},
-  { num: 5, titre: "Évaluer le plan de secours", items: [
-    "S'assurer de l'existence du plan de secours",
-    "Organiser des tests du plan de secours avec l'entité responsable",
-    "Vérifier la périodicité des tests du plan de secours",
-    "S'assurer qu'un responsable du plan a été nommément désigné",
-    "S'assurer qu'une cellule de crise chargée de conduire ce plan a été constituée",
-    "S'assurer que le plan de secours inclut une génération au support de l'ancien logiciel"
-  ]},
-  { num: 6, titre: "Évaluer les acquisitions", items: [
-    "S'assurer de l'existence d'une étude d'opportunité préalable",
-    "S'assurer de l'existence d'un cahier des charges ou expression des besoins claire",
-    "S'assurer de l'existence d'un comité de pilotage (utilisateurs, informaticiens, auditeurs)",
-    "S'assurer de la réalisation de tests suffisants pour vérifier la conformité du produit",
-    "S'assurer que le produit fini est livré avec la documentation adéquate",
-    "S'assurer que les contrats d'assurance et de maintenance liés aux acquisitions sont suivis",
-    "S'assurer que la maintenance du parc informatique est régulière",
-    "Vérifier le respect des autres clauses contractuelles relatives au parc informatique"
-  ]}
+const SI_ACTES = [
+  "Vérifier l'adéquation et la fiabilité du SIG aux besoins du SFD",
+  "Évaluer la conformité et la fiabilité de l’informatique — s’assurer de l’existence d’un schéma directeur informatique",
+  "Évaluer la conformité et la fiabilité de l’informatique — s’assurer de la qualité et la suffisance en nombre des ressources humaines en charge de la gestion du système d’information ;",
+  "Évaluer la conformité et la fiabilité de l’informatique — s’assurer de la concision et de l’exhaustivité de l’information produite pour une identification et un enregistrement des opérations conformes aux instructions BCEAO ;",
+  "Évaluer la conformité et la fiabilité de l’informatique — s’assurer de l’impossibilité d’une modification d’une journée comptable clôturée ;  S’assurer de la production automatisée des documents de synthèse suivant les instructions BCEAO ;",
+  "Évaluer la conformité et la fiabilité de l’informatique — s’assurer de la production automatisée des états de gestion",
+  "Évaluer la sécurité physique — vérifier qu’une liste exhaustive et actuelle des personnes ayant accès aux locaux informatiques est constituée ;",
+  "Évaluer la sécurité physique — s’assurer qu’un contrôle d’identité est effectué avant l’accès aux locaux informatiques ;",
+  "Évaluer la sécurité physique — s’assurer que les heures d’accès sont dûment stipulées ;",
+  "Évaluer la sécurité physique — s’assurer qu’en dehors de ces heures, les personnes présentes dans les locaux informatiques sont munies d’une autorisation spéciale ;",
+  "Évaluer la sécurité physique — contrôler l’existence de contrats d’assurance ;",
+  "Évaluer la sécurité physique — s’assurer de la présence des protections incendie adéquates (fait sur le même point) ;",
+  "Évaluer la sécurité physique — s’assurer que le serveur est placé au centre des locaux l’abritant ;",
+  "Évaluer la sécurité physique — s’assurer que les logiciels de base, les applicatifs et les données sont conservés dans des armoires ignifugées ;",
+  "Évaluer la sécurité physique — vérifier que les fichiers magnétiques sont identifiés à l’aide d’une étiquette interne ou externe comportant des informations sur l’intitulé et la date de la dernière mise à jour du fichier ;",
+  "Évaluer la sécurité physique — s’assurer qu’un double des fichiers est conservé à l’extérieur des locaux informatiques dans des coffres ignifugés et qu’ils pourront être facilement reconstitués ;",
+  "Évaluer la sécurité physique — s’assurer que les duplicatas des fichiers sont également mis à jour à chaque modification des fichiers ;",
+  "Évaluer la sécurité physique — s’assurer de la qualité des fichiers duplicata et de leurs supports ;",
+  "Évaluer la sécurité physique — s’assurer que les fichiers sont conservés sur une durée suffisante conformément aux instructions BCEAO pour faire face à des demandes de justification ;",
+  "Évaluer la sécurité physique — veiller au respect de la norme de sécurité relative à la conservation extraterritoriale des fichiers",
+  "Évaluer la sécurité logique — s’assurer que l’accès au système informatique est limité aux heures ouvrables stipulées dans les procédures ;",
+  "Évaluer la sécurité logique — s’assurer de la traçabilité des accès au système ;",
+  "Évaluer la sécurité logique — contrôler que des habilitations spéciales pour un usage en dehors de ces heures sont délivrées ;",
+  "Évaluer la sécurité logique — contrôler l’existence d’un mot de passe ou d’un code d’accès au système pour chaque utilisateur ;",
+  "Évaluer la sécurité logique — vérifier l’effectivité des habilitations pour chaque catégorie d’opération ;",
+  "Évaluer la sécurité logique — s’assurer que les mots de passe sont régulièrement modifiés ;",
+  "Évaluer la sécurité logique — s’assurer que le système d’attribution des mots de passe garantit la confidentialité de ceux-ci ;",
+  "Évaluer la sécurité logique — s’assurer que le mot de passe limite l’accès de l’employé aux opérations le concernant ;",
+  "Évaluer la sécurité logique — s’assurer que lors du départ d’un agent, les habilitations dont il bénéficie sont immédiatement supprimées ;",
+  "Évaluer la sécurité logique — s’assurer que l’accès aux applications en exploitation est interdit aux analystes et aux programmeurs sans une autorisation particulière ;",
+  "Évaluer la sécurité logique — s’assurer que des procédures formelles garantissent l’intégrité des traitements ;",
+  "Évaluer la sécurité logique — vérifier que les procédures d’exploitation sont sous la supervision d’un responsable ;",
+  "Évaluer la sécurité logique — s’assurer que la saisie est décentralisée au niveau des utilisateurs et qu’elle ne dépend pas du département informatique ;",
+  "Évaluer la sécurité logique — vérifier que la sécurité des systèmes est assurée par un responsable nommément désigné ;",
+  "Évaluer la sécurité logique — s’assurer que toutes les modifications de programme sont déclenchées par une demande écrite des utilisateurs après autorisation d’une personne habilitée ;",
+  "Évaluer la sécurité logique — vérifier qu’à chaque modification des tests sont effectués et que la documentation du programme et les fichiers de sauvegarde sont complétés et mis à jour ;",
+  "Évaluer la sécurité logique — vérifier que le système d’information permet la prise en compte des opérations intervenues après la clôture (journées supplémentaires)",
+  "Évaluer la sécurité logique — s’assurer que les états informatiques éditables sont recensés et font l’objet d’édition périodique et de rapprochement avec les données comptables correspondantes",
+  "Évaluer le plan de secours — s’assurer de l’existence du plan de secours ;",
+  "Évaluer le plan de secours — organiser des tests du plan de secours avec l’entité Responsable ;",
+  "Évaluer le plan de secours — vérifier la périodicité des tests du plan de secours ;",
+  "Évaluer le plan de secours — s’assurer qu’un responsable de ce plan a été nommément désigné ;",
+  "Évaluer le plan de secours — s’assurer qu’une cellule de crise chargée de conduire ce plan a été constituée ;",
+  "Évaluer le plan de secours — s’assurer que le plan de secours inclut une génération au support de l’ancien logiciel",
+  "Évaluer les acquisitions — s’assurer de l’existence d’une étude d’opportunité préalable pour évaluer l’utilité et la rentabilité du projet ;",
+  "Évaluer les acquisitions — s’assurer de l’existence d’un cahier des charges ou d’une expression des besoins formulée par les utilisateurs d’une manière claire, complète ;",
+  "Évaluer les acquisitions — s’assurer de l’existence d’un comité de pilotage regroupant les utilisateurs, les informaticiens et les auditeurs pour suivre les projets importants pour les études, réalisations, tests et réception de produits finis ;",
+  "Évaluer les acquisitions — s’assurer de la réalisation de tests suffisants permettant de s’assurer que le produit fonctionne correctement et conformément aux spécifications ;",
+  "Évaluer les acquisitions — s’assurer que le produit fini est livré avec la documentation adéquate permettant ultérieurement de retrouver les éléments nécessaires, pour modifier ou développer l’application ;",
+  "Évaluer les acquisitions — vérifier que des tests suffisants sont réalisés pour s’assurer que le produit fonctionne correctement et conformément à l’expression du besoin du service demandeur et au bon de commande ;",
+  "Évaluer les acquisitions — s’assurer que les contrats d’assurance et de maintenance liés aux acquisitions sont suivis et respectés ;",
+  "Évaluer les acquisitions — s’assurer que la maintenance du parc informatique est régulière ;",
+  "Évaluer les acquisitions — vérifier le respect des autres clauses contractuelles relatives à la gestion du parc informatique",
 ];
 
 function buildSI(bloc, g) {
@@ -386,12 +392,9 @@ function buildSI(bloc, g) {
       <td class="eval-cell"><input type="radio" name="ctrl${i}" value="faible"/></td>
     </tr>`).join('');
 
-  const actRows = SI_ACTIVITES.map(a => {
-    const items = a.items.length
-      ? `<ul>${a.items.map(it => `<li>${it}</li>`).join('')}</ul>` : '';
-    return `<tr>
-      <td class="act-num">${a.num}</td>
-      <td><strong>${a.titre}</strong>${items}</td>
+  const actRows = SI_ACTES.map((a, i) => `<tr>
+      <td class="act-num">${i + 1}</td>
+      <td>${a}</td>
       <td><input type="text" placeholder="Initiales" style="width:68px;text-align:center"/></td>
       <td>
         <div class="lacune-wrap">
@@ -400,8 +403,7 @@ function buildSI(bloc, g) {
         </div>
       </td>
       <td><textarea class="act-comment" rows="1" placeholder="Commentaire…"></textarea></td>
-    </tr>`;
-  }).join('');
+    </tr>`).join('');
 
   return `
     <div class="sub-title"><i class="fas fa-folder"></i> 7.0 — Fiche de Rubrique</div>
@@ -1499,7 +1501,7 @@ function buildEpargne(bloc, g) {
   `;
 }
 
-/* ═══════════════���════════════════════════════
+/* ════════════════════════════════════════════
    BUILDER — Finance et Comptabilité (Index 6)
 ════════════════════════════════════════════ */
 function buildFinance(bloc, g) {
@@ -1527,9 +1529,23 @@ function buildFinance(bloc, g) {
       id: '62', index: '6.2', titre: 'Comptabilisation des liquidités',
       objectif: "Veiller à la bonne gestion de la trésorerie.",
       acts: [
-        "A10 — Valeur en caisse : contrôler physiquement la caisse en dressant le PV d'inventaire ; contrôler la conformité entre l'encaisse physique et le solde en comptabilité ; contrôler les opérations en monnaie locale et en devises sur pièces ; contrôler l'encaisse eu égard au plafond prévu dans les procédures et au montant assuré",
-        "A12 — Comptes ordinaires débiteurs : s'assurer de l'existence des états de rapprochement bancaire et analyser les suspens ; analyser l'évolution annuelle de la structure des dépôts ; contrôler la réalité, la justification et la bonne classification des comptes ; contrôler l'effectivité et la conformité du dispositif de Lutte Anti-Blanchiment",
-        "A2A — Autres comptes de dépôts débiteurs : s'assurer de l'existence et de l'exactitude des soldes des comptes des institutions financières ; s'assurer que les intérêts créditeurs et débiteurs sont correctement calculés et comptabilisés à la date d'arrêté ; s'assurer de la justification des valeurs non imputées et autres sommes dues",
+        "A10 Valeur en caisse — contrôler physiquement la caisse, en dressant le procès-verbal d’inventaire et s’assurer de la séparation selon la monnaie ;",
+        "A10 Valeur en caisse — contrôler sur la base des procès-verbaux d’inventaire de caisse disponibles de l’organisation régulière des contrôles physiques ;",
+        "A10 Valeur en caisse — contrôler la conformité entre l’encaisse physique et le solde en comptabilité (extrait du compte caisse) et le brouillard de caisse le cas échéant ;",
+        "A10 Valeur en caisse — contrôler les opérations en monnaie locale et en devises sur pièces ;",
+        "A10 Valeur en caisse — contrôler l’encaisse eu égard au plafond prévu dans les procédures et au montant assuré",
+        "A12 Comptes ordinaires débiteurs — s’assurer de l’existence des états de rapprochement, contrôler ces états et analyser les éventuels suspens ;",
+        "A12 Comptes ordinaires débiteurs — analyser l’évolution annuelle de la structure des dépôts afin d’identifier les classer par contrepartie, par affectation, durée initiale et durée résiduelle ;",
+        "A12 Comptes ordinaires débiteurs — contrôler la réalité, la justification et la bonne classification des comptes par confirmation directe/Sondage ;",
+        "A12 Comptes ordinaires débiteurs — contrôler l’effectivité et la conformité du dispositif de Lutte Anti Blanchiment ;",
+        "A12 Comptes ordinaires débiteurs — contrôler les systèmes de paiement et moyens de paiement (effets, virements et prélèvements, cartes de paiement ou de débit et les porte- monnaies électroniques) :",
+        "A12 Comptes ordinaires débiteurs — justification,",
+        "A12 Comptes ordinaires débiteurs — réalité et classification des comptes de liaison, d’attente et d’encaissement",
+        "A2A Autres comptes de dépôts débiteurs — s'assurer de l'existence et de l'exactitude des soldes des comptes des institutions financières;",
+        "A2A Autres comptes de dépôts débiteurs — s'assurer que les intérêts créditeurs et débiteurs sont correctement calculés et comptabilisés à la date d’arrêté;",
+        "A2A Autres comptes de dépôts débiteurs — s'assurer que les comptes des institutions financières sont correctement présentés dans les états financiers;",
+        "A2A Autres comptes de dépôts débiteurs — s’assurer de la justification des « valeurs non imputées » et « autres sommes dues »;",
+        "A2A Autres comptes de dépôts débiteurs — contrôler les arrêtés des comptes (taux, agios) et la correcte classification des comptes de charges et produits",
       ]
     },
     {
@@ -1548,32 +1564,146 @@ function buildFinance(bloc, g) {
       id: '64', index: '6.4', titre: 'Transmission des documents de synthèse',
       objectif: "S'assurer du respect des dispositions légales et réglementaires de production et de transmission des documents de synthèse.",
       acts: [
-        "Contrôler l'exhaustivité des documents de synthèse : s'assurer qu'ils comprennent bilan, hors bilan, compte de résultat, soldes intermédiaires de gestion et annexes ; s'assurer du respect des principes comptables et des règles de regroupement des comptes en codes postes",
+        // Contrôler l’exhaustivité des documents de synthèse
+        "Contrôler l’exhaustivité des documents de synthèse — s’assurer que les documents de synthèse comprennent : Bilan, Hors bilan, Compte de résultat, soldes intermédiaires de gestion et annexes",
+        "Contrôler l’exhaustivité des documents de synthèse — s’assurer du respect des principes comptables et des règles de regroupement sécurisées et fiables des comptes en codes postes pour l’établissement des documents de synthèse (voir les tableaux de correspondance du Référentiel)",
         "Contrôler la conformité de la forme des documents de synthèse par rapport aux modèles présentés dans le Nouveau Référentiel Comptable",
-        "Contrôler le respect des normes d'établissement : date d'arrêté au 31 décembre ; version développée pour les SFD art. 44, version allégée pour les autres ; états financiers combinés pour les unions/fédérations/confédérations ; comptes consolidés pour les SFD non mutualistes ayant des filiales",
-        "Contrôler le respect des modalités de transmission et de conservation : arrêt par le CA et approbation en AG ; certification par le CAC pour les SFD art. 44 ; transmission en 5 exemplaires au Ministère et 2 à la BCEAO/Commission Bancaire dans un délai de 6 mois ; conservation durant 10 ans",
-        "Contrôler la cohérence entre les documents de synthèse et leur conformité aux principes comptables : intangibilité du bilan d'ouverture, égalité du résultat bilan/compte de résultat, cohérence des provisions et amortissements, contrôle arithmétique",
+        "Contrôler le respect des normes d’établissement — s’assurer que les documents de synthèse sont arrêtés le 31 décembre de chaque année ;",
+        "Contrôler le respect des normes d’établissement — s’assurer que les SFD de l’article 44 de la loi présentent leurs comptes suivant la version développée ;",
+        "Contrôler le respect des normes d’établissement — s’assurer que les autres SFD adoptent la version allégée ;",
+        "Contrôler le respect des normes d’établissement — s’assurer que les Unions, Fédérations et Confédérations produisent les états financiers sur une base combinée, regroupant leurs institutions de base ;",
+        "Contrôler le respect des normes d’établissement — s’assurer que les Unions, Fédérations et Confédérations produisent les états financiers en consolidant selon le mode approprié les filiales détenues ;",
+        "Contrôler le respect des normes d’établissement — s’assurer que les SFD non mutualistes ou non coopératives présentent des comptes sur base consolidée regroupant les filiales",
+        "Contrôler le respect les modalités de transmission et de conservation — s’assurer que les SFD transmettent des documents de synthèse arrêtés par le Conseil d’Administration et approuvés par l’Assemblée Générale",
+        "Contrôler le respect les modalités de transmission et de conservation — s’assurer pour les SFD de l’article 44 que les documents de synthèse ont fait l’objet de travaux de certification par les Commissaires aux comptes ;",
+        "Contrôler le respect les modalités de transmission et de conservation — s’assurer  pour les SFD visés à l’article 44 que les documents de synthèse  sont transmis en cinq (5) exemplaires au Ministère chargé des Finances, et en deux (2) exemplaires à la BCEAO et à la Commission Bancaire, un délai de six (6) mois après la clôture de l’exercice ;",
+        "Contrôler le respect les modalités de transmission et de conservation — s’assurer pour les autres SFD que les documents de synthèse  sont transmis en cinq (5)  exemplaires au Ministère chargé des finances, dans un délai de six (6)  mois après la clôture de l’exercice ;",
+        "Contrôler le respect les modalités de transmission et de conservation — s’assurer que les documents de synthèse sont transmis sous format papier au Ministère chargé des Finances, à la BCEAO et à la Commission Bancaire, sous la signature d’une personne habilitée par la structure ou d’un commissaire aux comptes ;",
+        "Contrôler le respect les modalités de transmission et de conservation — s’assurer que les documents de synthèse sont transmis sous format électronique bien que cette condition ne soit obligatoire pour les SFD de l’entité ;",
+        "Contrôler le respect les modalités de transmission et de conservation — s’assurer que les documents de synthèse sont conservés durant 10 ans et les conditions de conservation sont satisfaisant",
+        "Contrôler la cohérence entre les documents de synthèse et leur conformité aux principes comptables — s’assurer de l’intangibilité du bilan d’ouverture ;",
+        "Contrôler la cohérence entre les documents de synthèse et leur conformité aux principes comptables — s’assurer de l’égalité du résultat figurant au bilan et du résultat du compte de résultat ;",
+        "Contrôler la cohérence entre les documents de synthèse et leur conformité aux principes comptables — s’assurer de la cohérence entre les provisions et amortissements au bilan et leur contrepartie au compte de résultat ;",
+        "Contrôler la cohérence entre les documents de synthèse et leur conformité aux principes comptables — s’assurer du contrôle arithmétique exact des différents documents ;",
+        "Contrôler la cohérence entre les documents de synthèse et leur conformité aux principes comptables — s’assurer de la prise en compte effective et correcte des décisions des organes dans les comptes",
       ]
     },
     {
       id: '65', index: '6.5', titre: 'Bilan (Actif)',
       objectif: "S'assurer du respect des dispositions légales et réglementaires relatives à la comptabilité des SFD, notamment le RCSSFD.",
       acts: [
-        "A10 — Valeur en caisse : contrôle physique, PV d'inventaire, conformité encaisse physique / solde comptabilité, plafond procédures",
-        "A12 — Comptes ordinaires débiteurs : états de rapprochement, classification, dispositif Lutte Anti-Blanchiment, systèmes de paiement",
-        "A2A — Autres comptes de dépôts débiteurs : exactitude des soldes, intérêts, présentation dans les états financiers, justification des valeurs non imputées",
-        "A3A / A70 — Comptes de prêts / Comptes de prêts en souffrance : justification de la réalité et correcte classification des crédits et créances en souffrance et provisions liées",
-        "A60 — Créances rattachées / Institutions financières : rapprochement des pièces justificatives, recalcul par sondage, outils de calcul des intérêts courus",
-        "B2D / B30 / B40 / B70 — Crédits et comptes de crédits en souffrance : justification et classification des crédits ; suivi régulier et provisions ; correcte comptabilisation sur le bon exercice ; confirmation directe des soldes",
-        "B65 — Créances rattachées / Membres ou clients : rapprochement du solde comptable, vérification des calculs par sondage, outils de calcul des intérêts courus",
-        "C10 — Titres de placement : justification, réalité, bonne classification ; correcte évaluation, provisionnement et traitement comptable",
-        "C30 — Comptes de stocks : classification, évaluation, existence ; valorisation selon méthode admise (FIFO, PUMP) ; provisions pour dépréciation",
-        "C56 — Valeurs à l'encaissement et C59 valeurs à rejeter : justification par sondage, dates de remise, contrôle des suspens",
-        "D50 — Crédit-bail et opérations assimilées : comptabilité financière et sociale, tableau d'amortissement, classification selon nature du contrat",
-        "B2N — Comptes ordinaires débiteurs membres : réalité et correcte classification des dépôts ; contrôle Lutte Anti-Blanchiment",
-        "C40 — Débiteurs divers : revue analytique, correcte classification, justification par sondage, charges sociales, décaissements conformes aux états de paie",
-        "C6A — Comptes d'ordre et divers en devises : justification, résultat de change, exactitude des cours de réévaluation, indépendance des exercices",
-        "D01 — Valeurs immobilisées : inventaire des immobilisations, exactitude de l'évaluation, acquisitions/cessions, calcul des amortissements par sondage",
+        "A10 Valeur en caisse — contrôler physiquement la caisse, en dressant le procès-verbal d’inventaire et s’assurer de la séparation selon la monnaie ;",
+        "A10 Valeur en caisse — contrôler sur la base des procès-verbaux d’inventaire de caisse disponibles de l’organisation régulière des contrôles physiques ;",
+        "A10 Valeur en caisse — contrôler la conformité entre l’encaisse physique et le solde en comptabilité (extrait du compte caisse) et le brouillard de caisse le cas échéant ;",
+        "A10 Valeur en caisse — contrôler les opérations en monnaie locale et devises sur pièces ;",
+        "A10 Valeur en caisse — contrôler l’encaisse eu égard au plafond prévu dans les procédures et/ou assuré",
+        "A12 Comptes ordinaires débiteurs — s’assurer de l’existence des états de rapprochement, contrôler ces états et analyser les éventuels suspens ;",
+        "A12 Comptes ordinaires débiteurs — analyser l’évolution annuelle de la structure des dépôts afin d’identifier les classer par contrepartie, par affectation, durée initiale et durée résiduelle ;",
+        "A12 Comptes ordinaires débiteurs — contrôler la réalité, la justification et la bonne classification des comptes par confirmation directe/Sondage ;",
+        "A12 Comptes ordinaires débiteurs — contrôler l’effectivité et la conformité du dispositif de Lutte Anti Blanchiment ;",
+        "A12 Comptes ordinaires débiteurs — contrôler les systèmes de paiement et moyens de paiement (effets, virements et prélèvements, cartes de paiement ou de débit et les porte-monnaies électroniques) :",
+        "A12 Comptes ordinaires débiteurs — justification,",
+        "A12 Comptes ordinaires débiteurs — réalité et classification des comptes de liaison, d’attente et d’encaissement",
+        "A2A Autres comptes de dépôts débiteurs — s'assurer de l'existence et de l'exactitude des soldes des comptes des correspondants ;",
+        "A2A Autres comptes de dépôts débiteurs — s'assurer que les intérêts créditeurs et débiteurs sont correctement calculés et comptabilisés à la date d’arrêté ;",
+        "A2A Autres comptes de dépôts débiteurs — s'assurer que les comptes correspondants sont correctement présentés dans les états financiers ;",
+        "A2A Autres comptes de dépôts débiteurs — s’assurer de la justification des « valeurs non imputées » et « autres sommes dues » ;",
+        "A2A Autres comptes de dépôts débiteurs — contrôler les arrêtés des comptes (taux, agios) et la correcte classification des comptes de charges et produits",
+        "A3A Comptes de prêts /A70Comptes de prêts en souffrance — pour les crédits aux institutions financières, procéder à la justification de la réalité et à la correcte classification ;",
+        "A3A Comptes de prêts /A70Comptes de prêts en souffrance — contrôler la correcte classification des Créances en souffrance et des provisions liées",
+        "A3A Comptes de prêts /A70Comptes de prêts en souffrance — pour les crédits aux particuliers et entreprises, procéder à la justification de la réalité et à la correcte classification ;",
+        "A3A Comptes de prêts /A70Comptes de prêts en souffrance — pour les engagements par signature, s’assurer de l’exhaustivité des enregistrements et paiements et de la perception des commissions",
+        "A60 Créances rattachées/ Institutions financières — rapprocher les pièces justificatives des montants comptabilisés et les analyser conjointement avec les produits;",
+        "A60 Créances rattachées/ Institutions financières — refaire les calculs par sondage;",
+        "A60 Créances rattachées/ Institutions financières — s'assurer que le SFD dispose d'outils adéquats pour déterminer avec exactitude les intérêts courus pour tous les types de compte d'actif concernés",
+        "B2D, B30, B40 Crédits, B70 Comptes de crédits en souffrance — pour les crédits aux particuliers et entreprises, procéder à la justification de la réalité et à la correcte classification;",
+        "B2D, B30, B40 Crédits, B70 Comptes de crédits en souffrance — pour les engagements par signature s’assurer de l’exhaustivité des enregistrements et paiements et de la perception des commissions ;",
+        "B2D, B30, B40 Crédits, B70 Comptes de crédits en souffrance — contrôler la correcte classification des créances en souffrance et des provisions liées ;",
+        "B2D, B30, B40 Crédits, B70 Comptes de crédits en souffrance — faire la revue analytique et l’historique des provisions (méthode, taux, justification) ;",
+        "B2D, B30, B40 Crédits, B70 Comptes de crédits en souffrance — s’assurer que l'ensemble des lignes de crédit et des cautions accordées existent et sont comptabilisées avec exactitude ;",
+        "B2D, B30, B40 Crédits, B70 Comptes de crédits en souffrance — s’assurer que l'ensemble des dossiers fait l'objet d'un suivi régulier et les provisions afférentes sont correctement évaluées ;",
+        "B2D, B30, B40 Crédits, B70 Comptes de crédits en souffrance — s’assurer que l'ensemble des prêts et autres types de crédit est comptabilisé sur le correct exercice ;",
+        "B2D, B30, B40 Crédits, B70 Comptes de crédits en souffrance — s’assurer que l'ensemble des prêts et autres types de crédit fait l'objet d'une correcte classification comptable dans les états financiers;",
+        "B2D, B30, B40 Crédits, B70 Comptes de crédits en souffrance — s’assurer de la justification des comptes en confrontant les soldes aux sommes des contrats en cours ;",
+        "B2D, B30, B40 Crédits, B70 Comptes de crédits en souffrance — s’assurer de l’exactitude et de la réalité des soldes par confirmation directe",
+        "B2D, B30, B40 Crédits, B70 Comptes de crédits en souffrance — s’assurer de la correcte classification des opérations ;",
+        "B2D, B30, B40 Crédits, B70 Comptes de crédits en souffrance — s’assurer de l’existence d’une convention avec la contrepartie",
+        "B65 Créances rattachées/ Membres ou clients — rapprocher le solde comptable et l'analyse des comptes ;",
+        "B65 Créances rattachées/ Membres ou clients — justifier ces différentes analyses ;",
+        "B65 Créances rattachées/ Membres ou clients — vérifier les différents calculs (sondage) ;",
+        "B65 Créances rattachées/ Membres ou clients — s'assurer que le SFD dispose d'outils adéquats pour déterminer avec exactitude les intérêts courus pour tous les types de comptes d'actif concernés",
+        "C10 Titres de placement — s’assurer de la justification, de la réalité et de la bonne classification ;",
+        "C10 Titres de placement — contrôler les acquisitions et cessions ;",
+        "C10 Titres de placement — contrôler l’exhaustivité des enregistrements des titres en hors bilan ;",
+        "C10 Titres de placement — s’assurer de leur correcte évaluation et de l’exactitude de l’information dans l’annexe et le rapport de gestion et du respect du principe d’indépendance des exercices ;",
+        "C10 Titres de placement — s’assurer que les titres enregistrés dans les états financiers existent et font l'objet d'une comptabilisation exhaustive et exacte ;",
+        "C10 Titres de placement — s’assurer que les titres enregistrés dans les états financiers font l'objet d'une correcte classification selon les instructions de la BCEAO ;",
+        "C10 Titres de placement — s’assurer que les titres sont correctement valorisés compte tenu de leur classification ;",
+        "C10 Titres de placement — s’assurer que les titres font l'objet d'un correct provisionnement compte tenu de leur classification et des couvertures (si elles existent) qui leurs sont associées",
+        "C10 Titres de placement — s’assurer que les opérations sur titres font l'objet d'un correct traitement comptable",
+        "C10 Titres de placement — s’assurer que les plus et moins-values ont été correctement comptabilisées ;",
+        "C10 Titres de placement — s’assurer que les provisions éventuellement constituées ont été reprises pour les titres cédés",
+        "C30 Les comptes de stocks — vérifier la classification, l’évaluation et l’existence des stocks ;",
+        "C30 Les comptes de stocks — s’assurer que les stocks sont correctement appréhendés et comptabilisés, existent, appartiennent à l’institution ;",
+        "C30 Les comptes de stocks — s’assurer que la valorisation des stocks est correctement calculée, à l'aide d'une méthode admise par les normes comptables en vigueur (FIFO, PUMP);",
+        "C30 Les comptes de stocks — s’assurer que les chevauchements de fin de période sont correctement appréhendés;",
+        "C30 Les comptes de stocks — s’assurer que l'évaluation des stocks est justifiée : les provisions pour dépréciation estimées nécessaires sont comptabilisées",
+        "C56 Valeurs à l’encaissement — par sondage, procéder à la justification des comptes ;",
+        "C56 Valeurs à l’encaissement — vérifier les dates de remise à l’encaissement, contrôler les valeurs en suspens (pièce, apurement, encaissement)",
+        "C56 Valeurs à l’encaissement — contrôler les montants en attente importants et l’ancienneté des suspens",
+        "C59 valeurs à rejeter — par sondage, procéder à la justification des comptes ;",
+        "C59 valeurs à rejeter — vérifier les dates de remise à l’encaissement, contrôler les valeurs en suspens (pièce, apurement, encaissement) ;",
+        "C59 valeurs à rejeter — contrôler les montants en attente importants et l’ancienneté des suspens",
+        "D50 Crédit-bail et opérations assimilées — pour le crédit-bail, contrôler la comptabilité financière et sociale et faire une revue comparative des paiements de loyers, identifier les impayés et contrôler la provision et la réserve latente ;",
+        "D50 Crédit-bail et opérations assimilées — s’assurer de la correcte classification des biens selon la nature du contrat, l’objet du bien et l’actualité du contrat ;",
+        "D50 Crédit-bail et opérations assimilées — obtenir le tableau d’amortissement et contrôler la réalité et l’exactitude des paiements",
+        "B2N comptes ordinaires débiteurs — s’assurer de la réalité et de la correcte classification des dépôts des membres, bénéficiaires ou clients ;",
+        "B2N comptes ordinaires débiteurs — analyser l’évolution annuelle de la structure des dépôts ;",
+        "B2N comptes ordinaires débiteurs — contrôler la réalité, la justification et la bonne classification des comptes par confirmation directe/Sondage ;",
+        "B2N comptes ordinaires débiteurs — contrôler les arrêtés des comptes (taux, agios) et la correcte classification des comptes de charges et produits",
+        "B2N comptes ordinaires débiteurs — identifier les comptes et transactions à risques : personnel, clientèle occasionnelle ou non résidente, personnes morales, PPE, comptes dormants, ouverts par des intermédiaires, comptes fréquemment débiteurs …",
+        "B2N comptes ordinaires débiteurs — contrôler l’effectivité et la conformité du dispositif de Lutte Anti Blanchiment ;",
+        "B2N comptes ordinaires débiteurs — contrôler les systèmes de paiement et moyens de paiement (effets, virements et prélèvements, cartes de paiement ou de débit et les portes monnaies électroniques) :",
+        "B2N comptes ordinaires débiteurs — justification,",
+        "B2N comptes ordinaires débiteurs — réalité et classification des comptes de liaison, d’attente et d’encaissement",
+        "C40 Débiteurs divers — faire la revue analytique des comptes débiteurs et créditeurs divers ;",
+        "C40 Débiteurs divers — vérifier la correcte classification ;",
+        "C40 Débiteurs divers — contrôler par sondage la justification des comptes ;",
+        "C40 Débiteurs divers — contrôler l’absence d’opérations avec les Membres, bénéficiaires ou clients ou les Institutions financières ;",
+        "C40 Débiteurs divers — par sondage vérifier les comptes avec le personnel, avec l’État, les fournisseurs, les autres débiteurs ;",
+        "C40 Débiteurs divers — s’assurer que les sommes non versées à la fin de chaque période sont comptabilisées ;",
+        "C40 Débiteurs divers — s’assurer que les montants comptabilisés sont justes, compte tenu des engagements vis-à-vis des salariés",
+        "C40 Débiteurs divers — s’assurer que la comptabilisation des coûts sociaux est en adéquation avec les normes comptables en vigueur ;",
+        "C40 Débiteurs divers — s’assurer que les décaissements sont conformes aux salaires nets figurant sur les états de paie et les déclarations fiscales et sociales",
+        "C6A Comptes d’ordre et divers : pour les opérations en devises — justifier les comptes en devises ;",
+        "C6A Comptes d’ordre et divers : pour les opérations en devises — contrôler le résultat de change et comparer avec la période précédente et s’assurer du respect de la séparation d’exercices ;",
+        "C6A Comptes d’ordre et divers : pour les opérations en devises — s’assurer de l’exactitude, de l’existence et de l’exhaustivité des comptes libellés en devises et donc de la position de change ;",
+        "C6A Comptes d’ordre et divers : pour les opérations en devises — s’assurer que les opérations de change sont correctement présentées dans les états financiers ;",
+        "C6A Comptes d’ordre et divers : pour les opérations en devises — s’assurer de l’exactitude du résultat de change ;",
+        "C6A Comptes d’ordre et divers : pour les opérations en devises — examiner les comptes « gains et pertes de change » ;",
+        "C6A Comptes d’ordre et divers : pour les opérations en devises — comparer le résultat de change avec les résultats calculés par les cambistes et avec les résultats budgétés et les résultats de l’exercice précédent ;",
+        "C6A Comptes d’ordre et divers : pour les opérations en devises — contrôler l’exactitude des cours de réévaluation utilisés ;",
+        "C6A Comptes d’ordre et divers : pour les opérations en devises — s’assurer que toutes les positions de change sont prises en compte ;",
+        "C6A Comptes d’ordre et divers : pour les opérations en devises — s’assurer de la justification de tous les comptes en devises, en particulier les comptes de correspondants, les engagements au comptant à terme ferme ou optionnels (hors bilan), les comptes d’ajustement en devises ;",
+        "C6A Comptes d’ordre et divers : pour les opérations en devises — rapprocher la position de change cambiste de la position de change comptable ;",
+        "C6A Comptes d’ordre et divers : pour les opérations en devises — s’assurer du respect de l’indépendance des exercices en vérifiant que la comptabilisation des opérations et du résultat de change a été faite à la bonne date",
+        "C6A Comptes d’ordre et divers : pour les opérations en devises — s’assurer de la correcte classification et de la justification en fin d’année et du solde des comptes à l’ouverture des comptes des comptes de régularisation actif",
+        "D01 Valeurs immobilisées — vérifier l’existence des immobilisations en inventoriant un échantillon et en confrontant fichier des immobilisations et extraits de comptes ;",
+        "D01 Valeurs immobilisées — vérifier l’exactitude de l’évaluation des immobilisations notamment avec les provisions constituées sur les immobilisations incorporelles et les titres ;",
+        "D01 Valeurs immobilisées — s’assurer que les productions de l’institution pour elle-même sont comptabilisées en fin d’exercice en production en cours ;",
+        "D01 Valeurs immobilisées — s’assurer de l’exhaustivité de la documentation justifiant les immobilisations en cours et de leur correcte évaluation ;",
+        "D01 Valeurs immobilisées — s’assurer que les immobilisations incorporelles ne nécessitent pas la constitution de provision ;",
+        "D01 Valeurs immobilisées — s’assurer que les immobilisations acquises suite à des garanties ont fait l’objet de la procédure de réalisation avant comptabilisation ;",
+        "D01 Valeurs immobilisées — contrôler par sondage des acquisitions, cessions ou autres sorties de l’exercice ;",
+        "D01 Valeurs immobilisées — contrôler par sondage le calcul des amortissements",
+        "D01 Valeurs immobilisées — s’assurer que les immobilisations comptabilisées existent et appartiennent à l’institution et sont utilisées dans le cadre de l’activité financière (immobilisation d’exploitation) et de l’activité non financière (immobilisation hors exploitation) ;",
+        "D01 Valeurs immobilisées — s’assurer que les éléments qui doivent être immobilisés le sont, les cessions et autres mouvements de sortie sont tous comptabilisés ainsi que les plus ou moins-values qu'ils ont générées;",
+        "D01 Valeurs immobilisées — s’assurer de la réalité des plus-values par la justification documentaire des cessions;",
+        "D01 Valeurs immobilisées — s’assurer de la justification et de la conformité des immobilisations acquises suite à la réalisation des garanties;",
+        "D01 Valeurs immobilisées — s’assurer que les montants immobilisés sont justes et ne comprennent pas d'éléments devant être comptabilisés en charges;",
+        "D01 Valeurs immobilisées — s’assurer que tous les dividendes, intérêts et autres produits portant sur des immobilisations financières sont comptabilisés;",
+        "D01 Valeurs immobilisées — s’assurer que la valorisation des opérations et la présentation des comptes sont correctes et en adéquation avec les normes comptables en vigueur;",
+        "D01 Valeurs immobilisées — s’assurer du paiement à date et à bonne valeur des versements restant à effectuer",
       ]
     },
     {
@@ -2597,7 +2727,7 @@ function buildControleInterne(bloc, g) {
       <table class="dyn-table" id="const-${s.id}">
         <thead><tr><th style="width:70px">Point</th><th>Constats</th><th>Recommandations</th></tr></thead>
         <tbody><tr>
-          <td><input type="text" placeholder="Réf��"/></td>
+          <td><input type="text" placeholder="Réf…"/></td>
           <td><textarea rows="2" placeholder="Décrivez le constat…"></textarea></td>
           <td><textarea rows="2" placeholder="Recommandation…"></textarea></td>
         </tr></tbody>
@@ -2960,9 +3090,8 @@ function buildGeneric(bloc, g) {
 }
 
 /* ════════════════════════════════════════════
-   INIT
+   ACCÈS PAR LIEN SÉCURISÉ (token dans l'URL)
 ════════════════════════════════════════════ */
-
 async function gererAccesParLien() {
   const params = new URLSearchParams(window.location.search);
   const accessToken = params.get('token');
@@ -2994,27 +3123,32 @@ async function gererAccesParLien() {
   }
 }
 
+/* ════════════════════════════════════════════
+   INIT
+════════════════════════════════════════════ */
+
 document.addEventListener('DOMContentLoaded', async () => {
   await gererAccesParLien();   // FIX : doit s'exécuter avant tout le reste
   await requireAuth();         // FIX : bloque l'accès si personne n'est identifié
   await chargerListeInspecteurs();
+
   const id = new URLSearchParams(window.location.search).get('id');
 
   if (id) {
-  try {
-    const res = await fetch(`${API_URL}/missions/${id}`);
-    const mission = await res.json();
-    if (res.ok) {
-      document.getElementById('g-sfd').value      = mission.sfd || '';
-      document.getElementById('g-date').value     = mission.date_mission || '';
-      document.getElementById('g-ref').value      = mission.reference || '';
-      document.getElementById('g-chef').value     = mission.chef_mission || '';
-      document.getElementById('g-reviseur').value = mission.reviseur || '';
+    try {
+      const res = await fetch(`${API_URL}/missions/${id}`);
+      const mission = await res.json();
+      if (res.ok) {
+        document.getElementById('g-sfd').value      = mission.sfd || '';
+        document.getElementById('g-date').value     = mission.date_mission || '';
+        document.getElementById('g-ref').value      = mission.reference || '';
+        document.getElementById('g-chef').value     = mission.chef_mission || '';
+        document.getElementById('g-reviseur').value = mission.reviseur || '';
 
-      // ── FIX : réinjecte les données Infos SFD / Indicateurs & Suivi ──
-      if (typeof restaurerDonneesRapport === 'function') {
-        restaurerDonneesRapport(mission);
-      }
+        // ── FIX : réinjecte les données Infos SFD / Indicateurs & Suivi ──
+        if (typeof restaurerDonneesRapport === 'function') {
+          restaurerDonneesRapport(mission);
+        }
 
         if (mission.sfd) {
           document.getElementById('sfd-selected').innerHTML = `
@@ -3058,6 +3192,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       renderGrid();
     }
   } else {
+    // Nouvelle mission : cache vide
     window._voletsCache = {};
     addInspecteur();
     renderGrid();
@@ -3104,18 +3239,16 @@ async function enregistrerMission() {
 
   const id = new URLSearchParams(window.location.search).get("id");
 
+  // Collecter les données rapport
   let donnees_rapport = {};
   if (typeof collecterDonneesRapport === 'function') {
     donnees_rapport = collecterDonneesRapport();
   }
 
-  // FIX : "donnees_rapport_complet" n'existe pas côté backend (le modèle
-  // Pydantic n'a pas ce champ) — tout ce qui y était envoyé était donc
-  // silencieusement ignoré. On répartit maintenant les données vers les
-  // colonnes qui existent réellement : personnel, suivi_recommandations,
-  // et un "sac" indicateurs_financiers pour tout le reste (indicateurs
-  // d'activités, ressources/emplois, résultats, fonds propres, épargne,
-  // crédit, textes narratifs…).
+  // FIX : le backend (schéma Pydantic) ne connaît pas "donnees_rapport_complet".
+  // On éclate donc les données en champs existants côté API :
+  //   personnel, suivi_recommandations, infos_sfd, organes, reunions, ratios,
+  //   et tout le reste regroupé dans indicateurs_financiers.
   const {
     personnel,
     suivi_recommandations_precedentes,
@@ -3126,8 +3259,7 @@ async function enregistrerMission() {
     ...reste
   } = donnees_rapport;
 
-
-   const payload = {
+  const payload = {
     sfd, date_mission, inspecteurs, chef_mission,
     reference    : document.getElementById("g-ref")?.value.trim()      || null,
     reviseur     : document.getElementById("g-reviseur")?.value.trim() || null,
@@ -3135,14 +3267,14 @@ async function enregistrerMission() {
     periode      : document.getElementById("g-periode")?.value.trim()  || null,
     statut       : "En attente",
     est_soumise  : false,
+    // ── Données pour les tableaux du rapport (champs existants côté backend) ──
     infos_sfd    : infos_sfd || null,
     organes      : organes   || null,
     reunions     : reunions  || null,
     ratios       : ratios    || null,
-    personnel:              personnel && personnel.length ? personnel : null,
-    suivi_recommandations:  (suivi_recommandations_precedentes && suivi_recommandations_precedentes.length)
-                              ? suivi_recommandations_precedentes : null,
-    indicateurs_financiers: reste,
+    personnel    : (personnel && Object.keys(personnel).length) ? personnel : null,
+    suivi_recommandations : suivi_recommandations_precedentes || null,
+    indicateurs_financiers: (reste && Object.keys(reste).length) ? reste : null,
   };
 
   try {
@@ -3338,9 +3470,8 @@ document.addEventListener('click', function(e) {
 /* ════════════════════════════════════════════
    INSPECTEURS MULTIPLES
 ════════════════════════════════════════════ */
-    // FIX : démarre à 0 pour que le premier inspecteur ajouté porte le n° 1
-    // (addInspecteur() incrémente avant l'affichage).
-    let inspCount = 0;
+// FIX : démarrer à 0 pour que le premier inspecteur soit numéroté 1
+let inspCount = 0;
 
 async function chargerListeInspecteurs() {
   try {
@@ -3356,18 +3487,13 @@ function addInspecteur() {
   inspCount++;
   const list = document.getElementById('inspecteurs-list');
 
-      const options = (window._listeInspecteurs || [])
-        .map(u => {
-          // FIX : le backend renvoie « prenoms » (et non « prenom »).
-          // FIX : la VALEUR envoyée est désormais l'EMAIL de l'inspecteur
-          // (identifiant unique et fiable), tandis que le texte affiché
-          // reste « Nom Prénoms — email » pour rester lisible.
-          // C'est cet email que le backend recherche dans la table
-          // utilisateurs (colonne role = 'inspecteur') pour l'envoi du mail.
-          const nomComplet = `${u.nom} ${u.prenoms || ''}`.trim();
-          return `<option value="${u.email}">${nomComplet} — ${u.email}</option>`;
-        })
-        .join('');
+  // FIX : utiliser u.prenoms (champ backend) et l'email comme valeur du <option>
+  const options = (window._listeInspecteurs || [])
+    .map(u => {
+      const nomComplet = `${u.nom || ''} ${u.prenoms || ''}`.trim();
+      return `<option value="${u.email}">${nomComplet} — ${u.email}</option>`;
+    })
+    .join('');
 
   const div = document.createElement('div');
   div.className = 'inspecteur-row';
@@ -3392,14 +3518,13 @@ function removeInspecteur(btn) {
   inspCount = document.querySelectorAll('#inspecteurs-list .inspecteur-row').length;
 }
 
-    function getInspecteurs() {
-      // FIX : selon le contexte, une ligne d'inspecteur peut être un <select>
-      // (création par le chef de mission) ou un <input> (mission rechargée
-      // depuis le lien reçu par mail). On lit donc les deux types de champs.
-      return Array.from(
-        document.querySelectorAll('#inspecteurs-list select, #inspecteurs-list input')
-      ).map(s => s.value.trim()).filter(Boolean);
-    }
+function getInspecteurs() {
+  // FIX : prendre en compte les <select> (nouvelle mission) ET les <input>
+  // (mission rechargée depuis le backend)
+  return Array.from(
+    document.querySelectorAll('#inspecteurs-list select, #inspecteurs-list input')
+  ).map(s => s.value.trim()).filter(Boolean);
+}
 
 /* ════════════════════════════════════════════
    TYPE DE CONTRÔLE → affichage volets
@@ -3549,7 +3674,6 @@ function openCustomBloc(b) {
   document.getElementById('overlay').classList.add('open');
   document.body.style.overflow = 'hidden';
   attachHandlers();
-
 
   // ── FIX : restaurer les données déjà saisies pour ce volet, si elles existent ──
   const donneesSauvegardees = window._voletsCache && window._voletsCache[b.id];
@@ -4099,10 +4223,11 @@ function buildCameliSynthese(g) {
 }
 
 /* ════════════════════════════════════════════
-   RESTRICTION D'ACCÈS SELON LE RÔLE
-   Chef de mission : accès complet
-   Inspecteur      : lecture seule sur tout, sauf
-                      la grille des volets de contrôle
+   RESTRICTIONS PAR RÔLE
+   Seul le chef de mission peut modifier les infos
+   générales et les données SFD ; les autres
+   inspecteurs voient ces zones en lecture seule.
+   (estChefMission est définie dans le module d'auth)
 ════════════════════════════════════════════ */
 function appliquerRestrictionsRole() {
   if (typeof estChefMission !== 'function' || estChefMission()) return;
