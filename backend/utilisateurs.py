@@ -99,6 +99,21 @@ class ModificationModel(BaseModel):
     role:         Optional[str]      = None
     email:        Optional[EmailStr] = None
     mot_de_passe: Optional[str]      = None
+    telephone:    Optional[str]      = None
+    fonction:     Optional[str]      = None
+    structure:    Optional[str]      = None
+
+
+class ChangementMotDePasseModel(BaseModel):
+    mot_de_passe_actuel:  str
+    nouveau_mot_de_passe: str
+
+    @field_validator("nouveau_mot_de_passe")
+    @classmethod
+    def mdp_min_8(cls, v):
+        if len(v) < 8:
+            raise ValueError("Minimum 8 caractères.")
+        return v
 
     @field_validator("role")
     @classmethod
@@ -205,7 +220,7 @@ def utilisateur_courant(authorization: str = Header(None)):
 
     res = (
         supabase.table("utilisateurs")
-        .select("id, nom, prenoms, role, email")
+        .select("*")
         .eq("id", int(payload["sub"]))
         .execute()
     )
@@ -214,12 +229,51 @@ def utilisateur_courant(authorization: str = Header(None)):
 
     u = res.data[0]
     return {"utilisateur": {
-        "id":      u["id"],
-        "nom":     u["nom"],
-        "prenoms": u["prenoms"],
-        "role":    u.get("role") or "inspecteur",
-        "email":   u["email"]
+        "id":        u["id"],
+        "nom":       u["nom"],
+        "prenoms":   u["prenoms"],
+        "role":      u.get("role") or "inspecteur",
+        "email":     u["email"],
+        # Champs profil optionnels (None si colonnes absentes)
+        "telephone": u.get("telephone"),
+        "fonction":  u.get("fonction"),
+        "structure": u.get("structure"),
     }}
+
+
+# ── Changer son mot de passe (sécurisé) ───────────────────
+@router.post("/auth/changer-mot-de-passe")
+def changer_mot_de_passe(data: ChangementMotDePasseModel,
+                         authorization: str = Header(None)):
+    """FIX : route dédiée au changement de mot de passe depuis la page
+    Profil. Contrairement au PUT /utilisateurs/{id}, elle exige un token
+    de session valide ET vérifie le mot de passe actuel avant de changer."""
+    if not authorization or not authorization.startswith("Bearer "):
+        raise HTTPException(401, "Authentification requise.")
+
+    token   = authorization.split(" ", 1)[1]
+    payload = decoder_token(token)
+    if payload.get("type") != "session":
+        raise HTTPException(401, "Token invalide pour cette opération.")
+
+    res = (
+        supabase.table("utilisateurs")
+        .select("id, mot_de_passe")
+        .eq("id", int(payload["sub"]))
+        .execute()
+    )
+    if not res.data:
+        raise HTTPException(404, "Utilisateur introuvable.")
+
+    u = res.data[0]
+    if not pwd_context.verify(data.mot_de_passe_actuel, u["mot_de_passe"]):
+        raise HTTPException(401, "Le mot de passe actuel est incorrect.")
+
+    supabase.table("utilisateurs").update({
+        "mot_de_passe": pwd_context.hash(data.nouveau_mot_de_passe)
+    }).eq("id", u["id"]).execute()
+
+    return {"message": "✅ Mot de passe modifié avec succès."}
 
 
 # ── Liste utilisateurs ────────────────────────────────────
@@ -267,6 +321,9 @@ def modifier_utilisateur(id: int, data: ModificationModel):
     if data.role:         champs["role"]          = data.role
     if data.email:        champs["email"]         = data.email
     if data.mot_de_passe: champs["mot_de_passe"]  = pwd_context.hash(data.mot_de_passe)
+    if data.telephone:    champs["telephone"]     = data.telephone
+    if data.fonction:     champs["fonction"]      = data.fonction
+    if data.structure:    champs["structure"]     = data.structure
 
     if not champs:
         raise HTTPException(400, "Aucun champ à modifier.")
