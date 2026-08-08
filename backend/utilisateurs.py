@@ -102,6 +102,7 @@ class ModificationModel(BaseModel):
     telephone:    Optional[str]      = None
     fonction:     Optional[str]      = None
     structure:    Optional[str]      = None
+    photo:        Optional[str]      = None   # data URL (image redimensionnée côté client)
 
     @field_validator("role")
     @classmethod
@@ -238,6 +239,7 @@ def utilisateur_courant(authorization: str = Header(None)):
         "telephone": u.get("telephone"),
         "fonction":  u.get("fonction"),
         "structure": u.get("structure"),
+        "photo":     u.get("photo"),
     }}
 
 
@@ -324,6 +326,7 @@ def modifier_utilisateur(id: int, data: ModificationModel):
     if data.telephone:    champs["telephone"]     = data.telephone
     if data.fonction:     champs["fonction"]      = data.fonction
     if data.structure:    champs["structure"]     = data.structure
+    if data.photo:        champs["photo"]         = data.photo
 
     if not champs:
         raise HTTPException(400, "Aucun champ à modifier.")

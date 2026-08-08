@@ -29,10 +29,27 @@ async function chargerProfil() {
     });
     if (res.ok) {
       const data = await res.json();
-      _profilUser = data.utilisateur;
-      localStorage.setItem('utilisateur', JSON.stringify(_profilUser));
-      remplirProfil(_profilUser);
-      if (typeof afficherUtilisateur === 'function') afficherUtilisateur();
+
+      // FIX : fusionner au lieu d'écraser — si le backend renvoie null
+      // pour un champ (ex : colonnes telephone/fonction/structure pas
+      // encore créées en base), on garde la valeur locale au lieu de
+      // vider le champ sous les yeux de l'utilisateur.
+      const fusion = { ...(_profilUser || {}) };
+      Object.entries(data.utilisateur || {}).forEach(([k, v]) => {
+        if (v !== null && v !== undefined && v !== '') fusion[k] = v;
+      });
+
+      // Ne re-rendre que si quelque chose a réellement changé
+      // (évite le "saut" visuel à chaque actualisation)
+      if (JSON.stringify(fusion) !== JSON.stringify(_profilUser)) {
+        _profilUser = fusion;
+        localStorage.setItem('utilisateur', JSON.stringify(_profilUser));
+        remplirProfil(_profilUser);
+        if (typeof afficherUtilisateur === 'function') afficherUtilisateur();
+      } else {
+        _profilUser = fusion;
+        localStorage.setItem('utilisateur', JSON.stringify(_profilUser));
+      }
     }
   } catch (e) {
     console.error('Erreur chargement profil :', e);
@@ -46,11 +63,16 @@ function remplirProfil(u) {
 
   const avatarBig = document.getElementById('avatar-big');
   const fullname  = document.getElementById('profil-fullname');
-  const emailEl   = document.getElementById('profil-email');
 
-  if (avatarBig) avatarBig.textContent = initiales || '?';
-  if (fullname)  fullname.textContent  = `${u.nom || ''} ${u.prenoms || ''}`.trim();
-  if (emailEl)   emailEl.textContent   = u.email || '';
+  if (avatarBig) {
+    if (u.photo) {
+      avatarBig.innerHTML = `<img src="${u.photo}" alt="Photo de profil"
+        style="width:100%;height:100%;object-fit:cover;border-radius:inherit"/>`;
+    } else {
+      avatarBig.textContent = initiales || '?';
+    }
+  }
+  if (fullname) fullname.textContent = `${u.nom || ''} ${u.prenoms || ''}`.trim();
 
   const set = (id, val) => {
     const el = document.getElementById(id);
@@ -201,4 +223,69 @@ async function savePw() {
   } catch {
     message('❌ Serveur inaccessible.', false);
   }
+}
+
+
+/* ── Photo de profil ────────────────────────── */
+function changerPhoto(input) {
+  const file = input.files && input.files[0];
+  if (!file) return;
+
+  const msg = (txt, ok) => {
+    const el = document.getElementById('photo-message');
+    if (el) {
+      el.textContent = txt;
+      el.style.color = ok ? '#16A34A' : '#DC2626';
+      setTimeout(() => { el.textContent = ''; }, 5000);
+    }
+  };
+
+  if (!file.type.startsWith('image/')) {
+    msg('⚠️ Veuillez choisir une image.', false);
+    return;
+  }
+
+  const reader = new FileReader();
+  reader.onload = e => {
+    const img = new Image();
+    img.onload = async () => {
+      // Redimensionner à 256px max (carré, recadrage centré) pour
+      // garder un poids raisonnable en base
+      const TAILLE = 256;
+      const canvas = document.createElement('canvas');
+      canvas.width = canvas.height = TAILLE;
+      const ctx  = canvas.getContext('2d');
+      const cote = Math.min(img.width, img.height);
+      const sx   = (img.width  - cote) / 2;
+      const sy   = (img.height - cote) / 2;
+      ctx.drawImage(img, sx, sy, cote, cote, 0, 0, TAILLE, TAILLE);
+      const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
+
+      try {
+        const res = await fetch(`${API_URL}/utilisateurs/${_profilUser.id}`, {
+          method : 'PUT',
+          headers: {
+            'Content-Type':  'application/json',
+            'Authorization': `Bearer ${localStorage.getItem('token')}`
+          },
+          body: JSON.stringify({ photo: dataUrl })
+        });
+        const data = await res.json();
+        if (res.ok) {
+          _profilUser.photo = dataUrl;
+          localStorage.setItem('utilisateur', JSON.stringify(_profilUser));
+          remplirProfil(_profilUser);
+          if (typeof afficherUtilisateur === 'function') afficherUtilisateur();
+          msg('✅ Photo mise à jour.', true);
+        } else {
+          msg('❌ ' + (data.detail || 'Erreur lors de la mise à jour.'), false);
+        }
+      } catch {
+        msg('❌ Serveur inaccessible.', false);
+      }
+    };
+    img.src = e.target.result;
+  };
+  reader.readAsDataURL(file);
+  input.value = '';
 }

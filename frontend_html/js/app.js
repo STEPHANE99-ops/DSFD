@@ -30,9 +30,16 @@ async function requireAuth() {
     });
     if (!res.ok) throw new Error("session invalide");
     const data = await res.json();
-    // FIX : on écrase toujours avec les données fraîches renvoyées par
-    // le serveur (rôle, nom, prénoms à jour).
-    localStorage.setItem("utilisateur", JSON.stringify(data.utilisateur));
+    // FIX : on FUSIONNE les données fraîches du serveur avec la session
+    // locale au lieu de l'écraser. Un champ n'est mis à jour que si le
+    // serveur renvoie une valeur non vide — sinon les infos locales
+    // (téléphone, fonction, structure…) disparaissaient à chaque
+    // actualisation de page.
+    const fusion = { ...user };
+    Object.entries(data.utilisateur || {}).forEach(([k, v]) => {
+      if (v !== null && v !== undefined && v !== "") fusion[k] = v;
+    });
+    localStorage.setItem("utilisateur", JSON.stringify(fusion));
   } catch {
     localStorage.removeItem("utilisateur");
     localStorage.removeItem("token");
@@ -54,7 +61,15 @@ function afficherUtilisateur() {
   const roleEl   = document.getElementById("user-role");
 
   if (nameEl)   nameEl.textContent   = `${user.nom} ${user.prenoms || ""}`;
-  if (avatarEl) avatarEl.textContent = (user.nom[0] + (user.prenoms?.[0] || "")).toUpperCase();
+  if (avatarEl) {
+    if (user.photo) {
+      avatarEl.innerHTML = `<img src="${user.photo}" alt=""
+        style="width:100%;height:100%;object-fit:cover;border-radius:inherit"/>`;
+      avatarEl.style.overflow = "hidden";
+    } else {
+      avatarEl.textContent = (user.nom[0] + (user.prenoms?.[0] || "")).toUpperCase();
+    }
+  }
   // FIX : affiche le libellé du rôle applicatif (role), plus jamais "fonction"
   if (roleEl)   roleEl.textContent   = LABEL_ROLE[user.role] || "Utilisateur";
 }
