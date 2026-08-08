@@ -103,6 +103,13 @@ class ModificationModel(BaseModel):
     fonction:     Optional[str]      = None
     structure:    Optional[str]      = None
 
+    @field_validator("role")
+    @classmethod
+    def role_valide(cls, v):
+        if v is not None and v not in ROLES_VALIDES:
+            raise ValueError(f"Rôle invalide. Valeurs autorisées : {ROLES_VALIDES}")
+        return v
+
 
 class ChangementMotDePasseModel(BaseModel):
     mot_de_passe_actuel:  str
@@ -113,13 +120,6 @@ class ChangementMotDePasseModel(BaseModel):
     def mdp_min_8(cls, v):
         if len(v) < 8:
             raise ValueError("Minimum 8 caractères.")
-        return v
-
-    @field_validator("role")
-    @classmethod
-    def role_valide(cls, v):
-        if v is not None and v not in ROLES_VALIDES:
-            raise ValueError(f"Rôle invalide. Valeurs autorisées : {ROLES_VALIDES}")
         return v
 
 
