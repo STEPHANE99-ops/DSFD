@@ -1496,6 +1496,9 @@ function buildEpargne(bloc, g) {
     <!-- Section 8 — Politique et structure de l'épargne -->
     ${buildStructureEpargne()}
 
+    <!-- Matrice Ressources (déplacée du volet Crédit) -->
+    ${typeof buildRessourcesEpargne === 'function' ? buildRessourcesEpargne() : ''}
+
     <!-- 3.2.2 — Évolution des activités : Ressources -->
     ${buildEvolutionRessources()}
   `;
@@ -1990,24 +1993,41 @@ function buildCredit(bloc, g) {
       id: '41', index: '4.1', titre: 'Politique de crédit',
       objectif: "S'assurer de la définition d'une politique prudente de crédit conforme aux dispositions législatives et réglementaires et permettant d'éviter les risques liés aux prêts.",
       acts: [
-        "Vérifier la mise en place d'une politique en matière de crédit avec : des procédures écrites où la politique est clairement définie ; des objectifs en conformité avec la réglementation des SFD ; une procédure d'évaluation de la qualité des emprunteurs ; un système interne clair et précis de délégation pour l'octroi des crédits ; une procédure indiquant clairement qui autorise le crédit, son montant et les conditions",
-        "Vérifier que la politique de crédit respecte les limites fixées par les normes en matière de couverture et de division des risques : risque maximal sur un client ; limites des prêts aux dirigeants, au personnel et aux personnes liées",
-        "Contrôler l'existence dans la politique de crédit d'un système de séparation des tâches qui assure que : le déblocage des crédits est effectué par une personne différente de celle qui l'autorise ; avant le déblocage, les contrôles suivants sont réalisés : existence d'un dossier complet, existence des garanties prévues, seuls les crédits autorisés peuvent être débloqués",
-        "Contrôler les opérations du SFD avec les personnes apparentées : s'assurer que ces opérations sont conformes aux dispositions légales et réglementaires ; s'assurer que le SFD a produit tous les registres et formulaires requis ; vérifier la liste des comptes et les prêts accordés aux personnes apparentées",
+        "Vérifier la mise en place d'une politique en matière de crédit — s'assurer de l'existence de procédures écrites où une politique est clairement définie ;",
+        "Vérifier la mise en place d'une politique en matière de crédit — s'assurer que les objectifs sont en conformité avec la réglementation des SFD ;",
+        "Vérifier la mise en place d'une politique en matière de crédit — s'assurer de l'existence d'une procédure d'évaluation de la qualité des emprunteurs ;",
+        "Vérifier la mise en place d'une politique en matière de crédit — s'assurer de l'existence d'un système interne clair et précis de délégation pour l'octroi des crédits ;",
+        "Vérifier la mise en place d'une politique en matière de crédit — s'assurer de l'existence d'une procédure indiquant clairement qui autorise le crédit, son montant et les conditions",
+        "Vérifier que la politique de crédit respecte les limites fixées par les normes en matière de couverture et de division des risques — risque maximal sur un client ;",
+        "Vérifier que la politique de crédit respecte les limites fixées par les normes en matière de couverture et de division des risques — limites des prêts aux dirigeants, au personnel et aux personnes liées",
+        "Contrôler l'existence dans la politique de crédit d'un système de séparation des tâches — s'assurer que le déblocage des crédits est effectué par une personne différente de celle qui l'autorise ;",
+        "Contrôler l'existence dans la politique de crédit d'un système de séparation des tâches — s'assurer qu'avant le déblocage, l'existence d'un dossier complet est contrôlée ;",
+        "Contrôler l'existence dans la politique de crédit d'un système de séparation des tâches — s'assurer qu'avant le déblocage, l'existence des garanties prévues est contrôlée ;",
+        "Contrôler l'existence dans la politique de crédit d'un système de séparation des tâches — s'assurer que seuls les crédits autorisés peuvent être débloqués",
+        "Contrôler les opérations du SFD avec les personnes apparentées — s'assurer que ces opérations sont conformes aux dispositions légales et réglementaires ;",
+        "Contrôler les opérations du SFD avec les personnes apparentées — s'assurer que le SFD a produit tous les registres et formulaires requis ;",
+        "Contrôler les opérations du SFD avec les personnes apparentées — vérifier la liste des comptes et les prêts accordés aux personnes apparentées",
       ]
     },
     {
       id: '42', index: '4.2', titre: 'Étude des dossiers de crédit',
       objectif: "S'assurer que les demandes de prêt font l'objet d'une étude en vue de limiter l'exposition aux risques de crédit ainsi qu'aux risques réglementaires.",
       acts: [
-        "S'assurer que les dossiers de crédit sont suffisamment structurés, documentés et clairs ; contiennent des informations suffisantes permettant de porter une appréciation objective sur la qualité du risque ; sont conservés dans des conditions de sécurité acceptables",
+        "S'assurer que les dossiers de crédit sont suffisamment structurés, documentés et clairs ;",
+        "S'assurer que les dossiers de crédit contiennent des informations suffisantes permettant de porter une appréciation objective sur la qualité du risque ;",
+        "S'assurer que les dossiers de crédit sont conservés dans des conditions de sécurité acceptables",
       ]
     },
     {
       id: '43', index: '4.3', titre: 'Mise en place des crédits',
       objectif: "S'assurer du respect des conditions débitrices, de la loi sur le taux d'usure et des ratios prudentiels (division des risques, crédit aux dirigeants et au personnel, couverture des engagements à LMT, etc.).",
       acts: [
-        "Vérifier la mise en place d'un dispositif qui assure le respect des dispositions légales en matière d'octroi de crédit : l'objet du crédit et la source de remboursement ; l'intégrité de l'emprunteur et sa réputation concernant le respect de ses engagements ; la capacité de remboursement de l'emprunteur (présente et à venir) ; la qualité des garanties ; la nature des affaires de l'emprunteur ; les aptitudes de l'emprunteur à gérer son entreprise commerciale",
+        "Vérifier la mise en place d'un dispositif qui assure le respect des dispositions légales en matière d'octroi de crédit — l'objet du crédit et la source de remboursement ;",
+        "Vérifier la mise en place d'un dispositif qui assure le respect des dispositions légales en matière d'octroi de crédit — l'intégrité de l'emprunteur et sa réputation concernant le respect de ses engagements ;",
+        "Vérifier la mise en place d'un dispositif qui assure le respect des dispositions légales en matière d'octroi de crédit — la capacité de remboursement de l'emprunteur (présente et à venir) ;",
+        "Vérifier la mise en place d'un dispositif qui assure le respect des dispositions légales en matière d'octroi de crédit — la qualité des garanties ;",
+        "Vérifier la mise en place d'un dispositif qui assure le respect des dispositions légales en matière d'octroi de crédit — la nature des affaires de l'emprunteur ;",
+        "Vérifier la mise en place d'un dispositif qui assure le respect des dispositions légales en matière d'octroi de crédit — les aptitudes de l'emprunteur à gérer son entreprise commerciale",
         "S'assurer du respect de la loi sur le taux d'usure et des conditions débitrices",
       ]
     },
@@ -2015,23 +2035,43 @@ function buildCredit(bloc, g) {
       id: '44', index: '4.4', titre: 'Suivi et recouvrement des crédits',
       objectif: "S'assurer que les crédits mis en place sont suivis dans l'optique de limiter les risques.",
       acts: [
-        "Vérifier que le suivi des risques permet : d'identifier les crédits dont la date de remboursement a expiré ; de centraliser et traiter régulièrement les impayés ; de détecter d'éventuelles anomalies dans les mouvements de comptes de crédit",
-        "Identifier si la variation du volume des prêts en souffrance est principalement causée par : la conjoncture économique en général ; des événements survenus dans la région ; une faiblesse dans un des processus de gestion",
+        "Vérifier que le suivi des risques permet d'identifier les crédits dont la date de remboursement a expiré ;",
+        "Vérifier que le suivi des risques permet de centraliser et de traiter régulièrement les impayés ;",
+        "Vérifier que le suivi des risques permet de détecter d'éventuelles anomalies dans les mouvements de comptes de crédit",
+        "Identifier si la variation du volume des prêts en souffrance est principalement causée par la conjoncture économique en général ;",
+        "Identifier si la variation du volume des prêts en souffrance est principalement causée par des événements survenus dans la région ;",
+        "Identifier si la variation du volume des prêts en souffrance est principalement causée par une faiblesse dans un des processus de gestion",
         "Analyser les mécanismes de suivi et les mesures de recouvrement (voir fiche 4.4.1)",
         "Évaluer si des actions suffisantes ont été menées en temps opportun",
         "S'assurer que les critères de déclassement des crédits en souffrance et les règles concernant la provision sont respectés",
         "S'assurer que les intérêts cessent d'être comptabilisés dès lors qu'un crédit est déclassé en crédit en souffrance",
-        "Vérifier que : la définition des fonctions 'exploitation' et 'contentieux' est suffisamment claire ; une procédure pour les créances douteuses est disponible ; les dossiers contentieux ou litigieux sont promptement transmis au contentieux ; il existe une politique claire en matière de classification des créances douteuses",
+        "Vérifier que la définition des fonctions « exploitation » et « contentieux » est suffisamment claire ;",
+        "Vérifier qu'une procédure pour les créances douteuses est disponible ;",
+        "Vérifier que les dossiers contentieux ou litigieux sont promptement transmis au contentieux ;",
+        "Vérifier qu'il existe une politique claire en matière de classification des créances douteuses",
       ]
     },
     {
       id: '45', index: '4.5', titre: 'Comptabilisation des opérations de crédit',
       objectif: "S'assurer que les opérations de crédit sont comptabilisées selon les dispositions du référentiel comptable des SFD et de la mise en place d'un dispositif pour gérer les risques opérationnels.",
       acts: [
-        "A3A / A70 — Comptes de prêts / Comptes de prêts en souffrance : justification de la réalité et correcte classification des crédits aux institutions financières ; contrôle de la correcte classification des créances en souffrance et des provisions liées",
-        "A60 — Créances rattachées / Institutions financières : rapprocher les pièces justificatives des montants comptabilisés et les analyser conjointement avec les produits ; refaire les calculs par sondage ; s'assurer que le SFD dispose d'outils adéquats pour déterminer avec exactitude les intérêts courus",
-        "B65 — Créances rattachées / Membres ou clients : rapprocher le solde comptable et l'analyse des comptes ; justifier les différentes analyses ; vérifier les calculs par sondage ; s'assurer que le SFD dispose d'outils adéquats pour déterminer les intérêts courus",
-        "B2D / B30 / B40 / B70 — Crédits / Comptes de crédits en souffrance : justification de la réalité et correcte classification ; exhaustivité des enregistrements et paiements des engagements par signature ; revue analytique et historique des provisions (méthode, taux, justification) ; suivi régulier des dossiers et correcte évaluation des provisions ; comptabilisation sur le correct exercice ; justification des comptes en confrontant les soldes aux contrats en cours ; exactitude et réalité des soldes par confirmation directe ; existence d'une convention avec la contrepartie",
+        "A3A / A70 — Comptes de prêts / Comptes de prêts en souffrance — procéder à la justification de la réalité et à la correcte classification des crédits aux institutions financières ;",
+        "A3A / A70 — Comptes de prêts / Comptes de prêts en souffrance — contrôler la correcte classification des créances en souffrance et des provisions liées",
+        "A60 — Créances rattachées / Institutions financières — rapprocher les pièces justificatives des montants comptabilisés et les analyser conjointement avec les produits ;",
+        "A60 — Créances rattachées / Institutions financières — refaire les calculs par sondage ;",
+        "A60 — Créances rattachées / Institutions financières — s'assurer que le SFD dispose d'outils adéquats pour déterminer avec exactitude les intérêts courus",
+        "B65 — Créances rattachées / Membres ou clients — rapprocher le solde comptable et l'analyse des comptes ;",
+        "B65 — Créances rattachées / Membres ou clients — justifier ces différentes analyses ;",
+        "B65 — Créances rattachées / Membres ou clients — vérifier les différents calculs (sondage) ;",
+        "B65 — Créances rattachées / Membres ou clients — s'assurer que le SFD dispose d'outils adéquats pour déterminer avec exactitude les intérêts courus",
+        "B2D, B30, B40, B70 — Crédits / Comptes de crédits en souffrance — procéder à la justification de la réalité et à la correcte classification ;",
+        "B2D, B30, B40, B70 — Crédits / Comptes de crédits en souffrance — s'assurer de l'exhaustivité des enregistrements et paiements des engagements par signature et de la perception des commissions ;",
+        "B2D, B30, B40, B70 — Crédits / Comptes de crédits en souffrance — faire la revue analytique et l'historique des provisions (méthode, taux, justification) ;",
+        "B2D, B30, B40, B70 — Crédits / Comptes de crédits en souffrance — s'assurer que l'ensemble des dossiers fait l'objet d'un suivi régulier et que les provisions afférentes sont correctement évaluées ;",
+        "B2D, B30, B40, B70 — Crédits / Comptes de crédits en souffrance — s'assurer que l'ensemble des prêts et autres types de crédit est comptabilisé sur le correct exercice ;",
+        "B2D, B30, B40, B70 — Crédits / Comptes de crédits en souffrance — s'assurer de la justification des comptes en confrontant les soldes aux sommes des contrats en cours ;",
+        "B2D, B30, B40, B70 — Crédits / Comptes de crédits en souffrance — s'assurer de l'exactitude et de la réalité des soldes par confirmation directe ;",
+        "B2D, B30, B40, B70 — Crédits / Comptes de crédits en souffrance — s'assurer de l'existence d'une convention avec la contrepartie",
       ]
     },
   ];
@@ -2129,7 +2169,7 @@ function buildCredit(bloc, g) {
       <div class="form-group-full"><label>Compte</label><input type="text" placeholder="N° de compte"/></div>
       <div class="form-group-full"><label>Nom de l'emprunteur</label><input type="text" placeholder="Nom…"/></div>
       <div class="form-group-full"><label>Nature des activités</label><input type="text" placeholder=""/></div>
-      <div class="form-group-full"><label>But du crédit</label><input type="text" placeholder=""/></div>
+      <div class="form-group-full"><label>Objet du crédit</label><input type="text" placeholder=""/></div>
       <div class="form-group-full"><label>Montant du crédit</label><input type="text" placeholder="FCFA"/></div>
       <div class="form-group-full"><label>Solde (encours)</label><input type="text" placeholder="FCFA"/></div>
       <div class="form-group-full"><label>Garanties (nature, valeur)</label><input type="text" placeholder=""/></div>
@@ -2171,15 +2211,14 @@ function buildCredit(bloc, g) {
       <tbody>
         ${[
           ['cred_g1','2.1 — Informations complètes à la demande d\'emprunt'],
-          ['cred_g2','2.1 — Analyse et validation suffisantes (qualité de l\'emprunteur, capacité de remboursement, photos si immeuble, titre de propriété…)'],
-          ['cred_g3','2.1 — Recommandation claire et autorisation obtenue par le niveau requis'],
-          ['cred_g4','2.1 — Constitution de l\'épargne bloquée et des autres obligations'],
-          ['cred_g5','2.2 — Conformité de la documentation (tous les documents requis, conditions clairement explicites)'],
-          ['cred_g6','2.2 — Signatures à la demande d\'emprunt, au contrat de crédit, à la mise en garantie'],
-          ['cred_g7','2.2 — Certificat de propriété foncière / Attestation de propriété / Contrat de location'],
-          ['cred_g8','2.3 — Débours à l\'épargne de l\'emprunteur (compte d\'épargne, chèque ou virement au fournisseur)'],
-          ['cred_g9','2.3 — Suivi du débours (l\'utilisation des fonds a été vérifiée)'],
-          ['cred_g10','2.3 — Comptabilisation du prêt et des frais de dossier aux livres : journal, grand-livre, fiche de l\'emprunteur'],
+          ['cred_g2','2.2 — Analyse et validation suffisantes (qualité de l\'emprunteur, capacité de remboursement, photos si immeuble, certificat de propriété foncière / attestation de propriété / contrat de location…)'],
+          ['cred_g3','2.3 — Recommandation claire et autorisation obtenue par le niveau requis'],
+          ['cred_g4','2.4 — Constitution de l\'épargne bloquée et des autres obligations'],
+          ['cred_g5','2.5 — Conformité de la documentation (tous les documents requis, conditions clairement explicites)'],
+          ['cred_g6','2.6 — Signatures à la demande d\'emprunt, au contrat de crédit, à la mise en garantie'],
+          ['cred_g7','2.7 — Débours à l\'épargne de l\'emprunteur (compte d\'épargne, chèque ou virement au fournisseur)'],
+          ['cred_g8','2.8 — Suivi du débours (l\'utilisation des fonds a été vérifiée)'],
+          ['cred_g9','2.9 — Comptabilisation du prêt et des frais de dossier aux livres : journal, grand-livre, fiche de l\'emprunteur'],
         ].map(([name, label]) => `
         <tr><td>${label}</td>
           <td class="eval-cell"><input type="radio" name="${name}" value="oui"/></td>
@@ -2237,9 +2276,10 @@ function buildCredit(bloc, g) {
       <div class="form-group-full"><label>Compte</label><input type="text" placeholder="N° de compte"/></div>
       <div class="form-group-full"><label>Nom de l'emprunteur</label><input type="text" placeholder="Nom…"/></div>
       <div class="form-group-full"><label>Nature des activités</label><input type="text" placeholder=""/></div>
-      <div class="form-group-full"><label>But du crédit</label><input type="text" placeholder=""/></div>
+      <div class="form-group-full"><label>Objet du crédit</label><input type="text" placeholder=""/></div>
       <div class="form-group-full"><label>Montant du crédit</label><input type="text" placeholder="FCFA"/></div>
       <div class="form-group-full"><label>Date du crédit</label><input type="date"/></div>
+      <div class="form-group-full"><label>Date de la 1ère échéance de remboursement</label><input type="date"/></div>
       <div class="form-group-full"><label>Date de dernière échéance</label><input type="date"/></div>
       <div class="form-group-full"><label>Solde (encours)</label><input type="text" placeholder="FCFA"/></div>
       <div class="form-group-full"><label>Garanties (nature, valeur)</label><input type="text" placeholder=""/></div>

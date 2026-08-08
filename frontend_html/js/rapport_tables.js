@@ -968,6 +968,7 @@ const LIGNES_SITUATION_CREDIT = [
   { lib: "Plus 3-6 mois au plus" },
   { lib: "Plus 6-12 mois au plus" },
   { lib: "Plus 12-24 mois au plus" },
+  { lib: "Crédit en restructuration" },
 ];
 
 function buildSituationGlobaleCredit() {

@@ -276,6 +276,11 @@ function collecterDonneesDrawer(blocId) {
     Object.assign(data, collecterTablesCrédit());
   }
 
+  // FIX : la matrice Ressources est désormais rattachée au volet ÉPARGNE
+  if (blocId === 'epg' && typeof collecterRessourcesEpargne === 'function') {
+    Object.assign(data, collecterRessourcesEpargne());
+  }
+
   // ── FIX : capture générique de TOUS les champs du formulaire, pour
   // permettre une restauration fidèle à la réouverture du volet.
   data._snapshot = snapshotFormulaire(drawer);

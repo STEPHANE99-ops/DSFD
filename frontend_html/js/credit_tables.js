@@ -12,50 +12,13 @@
    existantes 4.1 à 4.5
 ════════════════════════════════════════════ */
 
-function buildCreditTables(g) {
+/* ════════════════════════════════════════════
+   MATRICE RESSOURCES — déplacée au volet ÉPARGNE
+   (observation : cette matrice relève des
+   indicateurs de l'épargne, pas du crédit)
+════════════════════════════════════════════ */
+function buildRessourcesEpargne() {
   return `
-
-    <!-- ══════════════════════════════════════
-         TABLE 15 — 10 plus gros épargnants
-    ══════════════════════════════════════ -->
-    <div class="sub-title" style="margin-top:36px">
-      <i class="fas fa-piggy-bank"></i> Tableau — 10 plus gros épargnants
-    </div>
-    <p style="font-size:12px;color:var(--text-muted);margin-bottom:10px">
-      Listez les 10 déposants dont l'épargne est la plus élevée.
-    </p>
-    <div style="overflow-x:auto">
-      <table class="dyn-table" id="tbl-gros-epargnants">
-        <thead>
-          <tr>
-            <th style="width:40px">N°</th>
-            <th>Nom et prénoms / Désignation</th>
-            <th style="width:160px">Épargne — Montant (F CFA)</th>
-            <th style="width:100px">Taux (%)</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${[1,2,3,4,5,6,7,8,9,10].map(n => `
-          <tr>
-            <td style="text-align:center;font-weight:700">${n}.</td>
-            <td><input type="text" placeholder="Nom…" style="width:100%"/></td>
-            <td><input type="text" placeholder="0" style="width:100%;text-align:right" oninput="calcTotauxEpargnants()"/></td>
-            <td><input type="text" placeholder="0,00" style="width:100%;text-align:right"/></td>
-          </tr>`).join('')}
-          <tr style="background:#F8FAFC;font-weight:700">
-            <td colspan="2" style="text-align:right;padding-right:12px">Encours des 10 plus gros épargnants</td>
-            <td><input type="text" id="total-gros-epargnants" placeholder="0" style="width:100%;text-align:right;font-weight:700" readonly/></td>
-            <td></td>
-          </tr>
-          <tr style="background:#F8FAFC;font-weight:700">
-            <td colspan="2" style="text-align:right;padding-right:12px">Encours global de l'épargne</td>
-            <td><input type="text" id="encours-global-epargne" placeholder="Saisir le total" style="width:100%;text-align:right;font-weight:700"/></td>
-            <td></td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
-
     <!-- ══════════════════════════════════════
          TABLE 16 — Ressources
     ══════════════════════════════════════ -->
@@ -113,6 +76,12 @@ function buildCreditTables(g) {
         </tbody>
       </table>
     </div>
+
+  `;
+}
+
+function buildCreditTables(g) {
+  return `
 
     <!-- ══════════════════════════════════════
          TABLE 17 — Production de prêts
@@ -475,15 +444,6 @@ function buildCreditTables(g) {
    FONCTIONS DE CALCUL AUTOMATIQUE
 ════════════════════════════════════════════ */
 
-function calcTotauxEpargnants() {
-  let total = 0;
-  document.querySelectorAll('#tbl-gros-epargnants tbody tr:not(:last-child):not(:nth-last-child(2)) input[type=text]:nth-child(1)').forEach(inp => {
-    const val = parseFloat((inp.closest('tr')?.querySelectorAll('input')[2]?.value || '0').replace(/\s/g,'').replace(',','.'));
-    if (!isNaN(val)) total += val;
-  });
-  const totalEl = document.getElementById('total-gros-epargnants');
-  if (totalEl) totalEl.value = total.toLocaleString('fr-FR');
-}
 
 function calcPAR() {
   const brutsVal = parseFloat((document.getElementById('port-brut-val')?.value || '0').replace(/\s/g,'').replace(',','.')) || 0;
@@ -614,25 +574,10 @@ function ajouterLigneSalarie() {
    quand bloc.id === 'cred'
 ════════════════════════════════════════════ */
 
-function collecterTablesCrédit() {
+/* Collecte de la matrice Ressources — appelée par volets_save
+   lors de la sauvegarde du volet ÉPARGNE */
+function collecterRessourcesEpargne() {
   const data = {};
-
-  // Table 15 — Gros épargnants
-  const grosEpargnants = [];
-  document.querySelectorAll('#tbl-gros-epargnants tbody tr').forEach(tr => {
-    const inputs = tr.querySelectorAll('input');
-    if (inputs.length >= 3 && inputs[1]?.value?.trim()) {
-      grosEpargnants.push({
-        nom:    inputs[1].value.trim(),
-        montant: inputs[2].value.trim(),
-        taux:   inputs[3]?.value?.trim() || '',
-      });
-    }
-  });
-  data.gros_epargnants = grosEpargnants;
-  data.encours_global_epargne = document.getElementById('encours-global-epargne')?.value || '';
-
-  // Table 16 — Ressources
   data.ressources = {
     periodes: [
       document.getElementById('res-periode1')?.value || '',
@@ -658,7 +603,15 @@ function collecterTablesCrédit() {
       p4: document.getElementById('res-total-p4')?.value || '',
     }
   };
+  return data;
+}
 
+function collecterTablesCrédit() {
+  const data = {};
+
+  // (Tables 15 et 16 déplacées au volet Épargne :
+  //  10 plus gros épargnants → nouveau tableau epggros de buildStructureEpargne,
+  //  Ressources → buildRessourcesEpargne / collecterRessourcesEpargne)
   // Table 17 — Production de prêts
   data.production_prets = ['prod-nb-prets','prod-nb-mois','prod-montant','prod-evol','prod-var'].reduce((acc, id) => {
     acc[id] = {
