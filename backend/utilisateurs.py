@@ -311,7 +311,7 @@ def connexion(data: ConnexionModel):
         u = creation.data[0]
         _creer_et_envoyer_invitation(u["nom"], u["prenoms"], u["email"], ROLE_DIRECTEUR)
         raise HTTPException(
-            202,
+            403,
             "Un email vous a été envoyé pour activer votre compte et choisir "
             "votre mot de passe. Consultez votre boîte de réception."
         )
@@ -327,7 +327,7 @@ def connexion(data: ConnexionModel):
     if u.get("statut_compte") == STATUT_INVITE:
         _creer_et_envoyer_invitation(u.get("nom"), u.get("prenoms"), u["email"], u.get("role") or ROLE_DIRECTEUR)
         raise HTTPException(
-            202,
+            403,
             "Votre compte n'est pas encore activé. Un nouveau lien pour "
             "définir votre mot de passe vient de vous être envoyé par email."
         )

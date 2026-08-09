@@ -306,7 +306,7 @@ async function sauvegarderVolet(bloc) {
 
   // FIX : identité de l'auteur, pour le journal d'activité de
   // l'interface d'administration (qui a rempli quoi, et quand).
-  const _u = JSON.parse(localStorage.getItem('utilisateur') || 'null');
+  const _u = typeof _lireUtilisateurLocal === 'function' ? _lireUtilisateurLocal(null) : JSON.parse(localStorage.getItem('utilisateur') || 'null');
   const modifiePar = _u?.email || '';
 
   try {

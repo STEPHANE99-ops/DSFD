@@ -15,9 +15,26 @@ const API_URL = "https://dsfd-2.onrender.com";  // sans slash final
    qu'une session d'un autre utilisateur reste
    affichée par erreur.
 ════════════════════════════════════════════ */
+// FIX : lecture défensive de localStorage.utilisateur — une valeur
+// corrompue (ex. la chaîne littérale "undefined", laissée par un ancien
+// bug) ne doit plus jamais faire planter tout le script sur toutes les
+// pages. En cas d'échec de parsing, on nettoie et on retourne la valeur
+// par défaut demandée.
+function _lireUtilisateurLocal(valeurParDefaut) {
+  try {
+    const brut = localStorage.getItem("utilisateur");
+    if (!brut) return valeurParDefaut;
+    return JSON.parse(brut);
+  } catch {
+    localStorage.removeItem("utilisateur");
+    localStorage.removeItem("token");
+    return valeurParDefaut;
+  }
+}
+
 async function requireAuth() {
   const token = localStorage.getItem("token");
-  const user  = JSON.parse(localStorage.getItem("utilisateur") || "null");
+  const user  = _lireUtilisateurLocal(null);
 
   if (!token || !user) {
     window.location.href = "index.html";
@@ -54,7 +71,12 @@ const LABEL_ROLE = {
 };
 
 function afficherUtilisateur() {
-  const user = JSON.parse(localStorage.getItem("utilisateur") || "{}");
+  // FIX : localStorage.getItem peut contenir une valeur corrompue (ex. la
+  // chaîne littérale "undefined") suite à un ancien bug ou une manipulation
+  // externe. Un JSON.parse qui échoue ici plantait tout le script sur
+  // TOUTES les pages (afficherUtilisateur tourne au chargement de chaque
+  // page) — on neutralise et on nettoie plutôt que de laisser planter.
+  const user = _lireUtilisateurLocal({});
   if (!user.nom) return;
 
   const nameEl   = document.getElementById("user-name");
@@ -93,7 +115,7 @@ function verrouillerAccesDirecteur(user) {
    RÔLE UTILISATEUR — helpers
 ════════════════════════════════════════════ */
 function getUserRole() {
-  const user = JSON.parse(localStorage.getItem("utilisateur") || "{}");
+  const user = _lireUtilisateurLocal({});
   return user.role || "inspecteur";
 }
 function estChefMission() {
