@@ -304,6 +304,11 @@ async function sauvegarderVolet(bloc) {
   const commentaireGeneral = bloc.commentaire_general || '';
   donnees.commentaire_general = commentaireGeneral;
 
+  // FIX : identité de l'auteur, pour le journal d'activité de
+  // l'interface d'administration (qui a rempli quoi, et quand).
+  const _u = JSON.parse(localStorage.getItem('utilisateur') || 'null');
+  const modifiePar = _u?.email || '';
+
   try {
     const response = await fetch(`${API_URL}/volets/`, {
       method  : 'POST',
@@ -316,6 +321,7 @@ async function sauvegarderVolet(bloc) {
         data:                donnees,
         commentaire_general: commentaireGeneral,
         est_valide:          true,
+        modifie_par:         modifiePar,
       })
     });
 

@@ -1,0 +1,74 @@
+/* ════════════════════════════════════════════
+   Administration.css
+   Styles complémentaires à Statistique.css pour
+   la page Administration (table, toast, actions)
+════════════════════════════════════════════ */
+
+/* ── Page sans sidebar : la directrice ne navigue que sur cette page,
+      pas besoin de menu latéral. On annule la marge réservée à la
+      sidebar dans Statistique.css et on adapte le topbar en conséquence. ── */
+.main-full { margin-left: 0 !important; }
+.main-full .topbar { padding: 0 28px; }
+.main-full .topbar-left .logo-text { font-size: 15px; color: var(--text-dark); }
+.main-full .topbar-left .breadcrumb {
+  display: inline-flex; align-items: center; gap: 8px;
+  font-size: 13px; color: var(--text-muted); font-weight: 600;
+  padding-left: 14px; margin-left: 4px; border-left: 1px solid var(--border);
+}
+.main-full .topbar-right { display: flex; align-items: center; }
+
+.admin-table thead th { white-space: nowrap; }
+.admin-empty {
+  text-align: center;
+  padding: 28px 14px !important;
+  color: var(--text-muted);
+  font-size: 13px;
+}
+
+/* ── Boutons secondaires (réinitialiser filtre) ── */
+.btn-secondary {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 7px 14px;
+  background: var(--white); color: var(--text-dark);
+  border: 1.5px solid var(--border); border-radius: var(--radius-xs);
+  font-size: 12.5px; font-weight: 700; cursor: pointer;
+  transition: all var(--transition);
+}
+.btn-secondary:hover { background: var(--bg); border-color: var(--text-muted); }
+
+/* ── Actions Approuver / Rejeter ── */
+.btn-approuver, .btn-rejeter-compte {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 7px 13px; border: none; border-radius: var(--radius-xs);
+  font-size: 12px; font-weight: 700; cursor: pointer;
+  transition: all var(--transition);
+}
+.btn-approuver { background: #ECFDF5; color: #16A34A; }
+.btn-approuver:hover { background: #16A34A; color: #fff; }
+.btn-rejeter-compte { background: #FEF2F2; color: #DC2626; margin-left: 6px; }
+.btn-rejeter-compte:hover { background: #DC2626; color: #fff; }
+.btn-approuver:disabled, .btn-rejeter-compte:disabled { opacity: .5; cursor: not-allowed; }
+
+/* ── Badge statut (validé / brouillon) ── */
+.badge-statut {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 3px 10px; border-radius: 999px;
+  font-size: 11px; font-weight: 700;
+}
+.badge-statut.valide  { background: #ECFDF5; color: #16A34A; }
+.badge-statut.brouillon { background: #FFF7ED; color: #C2410C; }
+
+/* ── Toast (repris de nouvelle_mission.css) ── */
+.toast {
+  position: fixed; bottom: 28px; left: 50%;
+  transform: translateX(-50%) translateY(60px);
+  background: var(--text-dark); color: var(--white);
+  padding: 12px 22px; border-radius: var(--radius-sm);
+  font-size: 13.5px; font-weight: 700;
+  z-index: 999;
+  display: flex; align-items: center; gap: 10px;
+  box-shadow: 0 8px 24px rgba(0,0,0,.18);
+  transition: transform .3s, opacity .3s;
+  opacity: 0; pointer-events: none;
+}
+.toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }

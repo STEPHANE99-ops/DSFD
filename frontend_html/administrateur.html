@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Administration</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+  <link rel="stylesheet" href="css/Statistique.css"/>
+  <link rel="stylesheet" href="css/Administration.css"/>
+</head>
+<body>
+
+<div class="main main-full">
+  <header class="topbar">
+    <div class="topbar-left">
+      <div class="logo-text" style="display:flex;align-items:center;gap:10px">
+        <strong>DSFD</strong>
+        <span class="breadcrumb" style="margin:0">
+          <i class="fas fa-user-shield" style="color:var(--orange)"></i>
+          <span>Administration</span>
+        </span>
+      </div>
+    </div>
+    <div class="topbar-right">
+      <div class="user-info">
+        <div class="user-avatar" id="user-avatar"></div>
+        <div>
+          <div class="user-name" id="user-name"></div>
+          <div class="user-role" id="user-role"></div>
+        </div>
+      </div>
+      <button class="btn-secondary" onclick="logout()" style="margin-left:14px">
+        <i class="fas fa-sign-out-alt"></i> Déconnexion
+      </button>
+    </div>
+  </header>
+
+  <div class="content">
+
+    <div class="page-header">
+      <div>
+        <h2>Administration</h2>
+        <p>Approbation des comptes et suivi de l'activité</p>
+      </div>
+    </div>
+
+    <!-- Accès refusé (affiché si le rôle n'est pas "directeur") -->
+    <div id="acces-refuse" class="card-box" style="display:none;text-align:center;padding:48px 20px">
+      <i class="fas fa-lock" style="font-size:32px;color:#94A3B8;margin-bottom:12px;display:block"></i>
+      <h3 style="margin:0 0 6px">Accès réservé</h3>
+      <p style="color:var(--text-muted);margin:0">Cette section est réservée à l'administration.</p>
+    </div>
+
+    <div id="admin-body">
+
+      <!-- KPI -->
+      <div class="kpi-grid">
+        <div class="kpi-card">
+          <div class="kpi-label">Comptes en attente</div>
+          <div class="kpi-val" id="kpi-en-attente">—</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Volets modifiés aujourd'hui</div>
+          <div class="kpi-val" id="kpi-volets-jour">—</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Inspecteurs actifs (7 derniers jours)</div>
+          <div class="kpi-val" id="kpi-inspecteurs-actifs">—</div>
+        </div>
+      </div>
+
+      <!-- Inscriptions en attente -->
+      <div class="card-box" style="margin-top:24px">
+        <h3 class="section-title"><i class="fas fa-user-clock"></i> Inscriptions en attente</h3>
+        <div style="overflow-x:auto">
+          <table class="admin-table" id="tbl-en-attente">
+            <thead>
+              <tr>
+                <th>Nom</th>
+                <th>Email</th>
+                <th>Rôle demandé</th>
+                <th>Date de la demande</th>
+                <th style="width:220px">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="tbody-en-attente">
+              <tr><td colspan="5" class="admin-empty">Chargement…</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Journal d'activité -->
+      <div class="card-box" style="margin-top:24px">
+        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
+          <h3 class="section-title" style="margin:0"><i class="fas fa-history"></i> Journal d'activité — remplissage des volets</h3>
+          <div style="display:flex;align-items:center;gap:8px">
+            <label style="font-size:12.5px;color:var(--text-muted);font-weight:600">Filtrer par jour :</label>
+            <input type="date" id="filtre-jour" style="padding:7px 10px;border:1.5px solid var(--border);border-radius:8px;font-size:13px"/>
+            <button class="btn-secondary" id="btn-reset-filtre" onclick="reinitialiserFiltre()">Réinitialiser</button>
+          </div>
+        </div>
+        <p style="font-size:12px;color:var(--text-muted);margin:10px 0">
+          Les 200 dernières actions enregistrées, tous inspecteurs et missions confondus, triées de la plus récente à la plus ancienne.
+        </p>
+        <div style="overflow-x:auto">
+          <table class="admin-table" id="tbl-activite">
+            <thead>
+              <tr>
+                <th style="width:110px">Date</th>
+                <th style="width:90px">Heure</th>
+                <th>Inspecteur</th>
+                <th>SFD / Mission</th>
+                <th>Volet</th>
+                <th style="width:110px">Statut</th>
+              </tr>
+            </thead>
+            <tbody id="tbody-activite">
+              <tr><td colspan="6" class="admin-empty">Chargement…</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast">
+  <span id="toast-msg"></span>
+</div>
+
+<script src="js/app.js"></script>
+<script src="js/administration.js"></script>
+</body>
+</html>

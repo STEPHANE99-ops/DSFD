@@ -50,6 +50,7 @@ async function requireAuth() {
 const LABEL_ROLE = {
   inspecteur:   "Inspecteur",
   chef_mission: "Chef de mission",
+  directeur:    "Directeur",
 };
 
 function afficherUtilisateur() {
@@ -72,6 +73,20 @@ function afficherUtilisateur() {
   }
   // FIX : affiche le libellé du rôle applicatif (role), plus jamais "fonction"
   if (roleEl)   roleEl.textContent   = LABEL_ROLE[user.role] || "Utilisateur";
+
+  verrouillerAccesDirecteur(user);
+}
+
+// FIX : la directrice (rôle "directeur") ne doit accéder qu'à sa propre
+// interface, Administration.html — jamais au dashboard ni aux autres
+// pages de travail des inspecteurs. Si son compte se retrouve sur une
+// autre page (lien direct, onglet resté ouvert, favori…), on la renvoie
+// immédiatement vers Administration.html.
+function verrouillerAccesDirecteur(user) {
+  if (user.role !== "directeur") return;
+  const page = (window.location.pathname.split("/").pop() || "").toLowerCase();
+  if (page === "administration.html" || page === "index.html" || page === "") return;
+  window.location.href = "Administration.html";
 }
 
 /* ════════════════════════════════════════════
@@ -183,7 +198,11 @@ if (loginForm) {
         message.textContent = "✅ Connexion réussie ! Redirection...";
         localStorage.setItem("utilisateur", JSON.stringify(resultat.utilisateur));
         localStorage.setItem("token", resultat.token);
-        setTimeout(() => { window.location.href = "dashboard.html"; }, 1500);
+        // FIX : le rôle "directeur" est redirigé directement vers son
+        // interface dédiée, jamais vers le dashboard des inspecteurs.
+        const destination = resultat.utilisateur?.role === "directeur"
+          ? "Administration.html" : "dashboard.html";
+        setTimeout(() => { window.location.href = destination; }, 1500);
       } else {
         message.style.color = "red";
         message.textContent = "❌ " + resultat.detail;
