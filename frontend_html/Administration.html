@@ -44,17 +44,42 @@
       </div>
     </div>
 
-    <!-- Accès refusé (affiché si le rôle n'est pas "directeur") -->
+    <!-- Accès refusé (affiché si le rôle n'est pas "directrice") -->
     <div id="acces-refuse" class="card-box" style="display:none;text-align:center;padding:48px 20px">
       <i class="fas fa-lock" style="font-size:32px;color:#94A3B8;margin-bottom:12px;display:block"></i>
       <h3 style="margin:0 0 6px">Accès réservé</h3>
-      <p style="color:var(--text-muted);margin:0">Cette section est réservée à l'administration.</p>
+      <p style="color:var(--text-muted);margin:0">Cette section est réservée à l'administrateur.</p>
     </div>
 
     <div id="admin-body">
 
+      <!-- Mon profil -->
+      <div class="card-box">
+        <h3 class="section-title"><i class="fas fa-user-circle"></i> Mon profil</h3>
+        <div style="display:flex;gap:24px;align-items:flex-start;flex-wrap:wrap;margin-top:14px">
+          <div style="position:relative;width:84px;flex-shrink:0">
+            <div class="admin-avatar-big" id="profil-avatar-big"></div>
+            <label title="Changer la photo" class="admin-avatar-camera">
+              <i class="fas fa-camera"></i>
+              <input type="file" accept="image/*" style="display:none" onchange="changerPhotoAdmin(this)"/>
+            </label>
+          </div>
+          <div style="flex:1;min-width:260px;display:grid;grid-template-columns:1fr 1fr;gap:12px">
+            <div class="profil-field"><label>Nom</label><input type="text" id="admin-input-nom"/></div>
+            <div class="profil-field"><label>Prénoms</label><input type="text" id="admin-input-prenoms"/></div>
+            <div class="profil-field" style="grid-column:1/-1"><label>Téléphone</label><input type="text" id="admin-input-tel" placeholder="Ex : +225 07 00 00 00 00"/></div>
+          </div>
+        </div>
+        <div style="margin-top:16px;display:flex;align-items:center;gap:14px">
+          <button class="btn-approuver" onclick="enregistrerProfilAdmin()">
+            <i class="fas fa-save"></i> Enregistrer
+          </button>
+          <p id="profil-admin-msg" style="font-size:12.5px;font-weight:700;margin:0"></p>
+        </div>
+      </div>
+
       <!-- KPI -->
-      <div class="kpi-grid">
+      <div class="kpi-grid" style="margin-top:24px">
         <div class="kpi-card">
           <div class="kpi-label">Comptes en attente</div>
           <div class="kpi-val" id="kpi-en-attente">—</div>

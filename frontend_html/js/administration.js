@@ -6,6 +6,7 @@
 ════════════════════════════════════════════ */
 
 let _activiteComplete = []; // liste brute reçue du backend, avant filtre jour
+let _adminUser = null;      // profil de la directrice, pour la carte "Mon profil"
 
 document.addEventListener('DOMContentLoaded', async () => {
   if (typeof requireAuth === 'function') await requireAuth();
@@ -18,6 +19,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     document.getElementById('admin-body').style.display = 'none';
     return;
   }
+
+  _adminUser = typeof _lireUtilisateurLocal === 'function'
+    ? _lireUtilisateurLocal({})
+    : JSON.parse(localStorage.getItem('utilisateur') || '{}');
+  remplirProfilAdmin(_adminUser);
 
   await Promise.all([
     chargerInscriptionsEnAttente(),
@@ -238,4 +244,136 @@ function reinitialiserFiltre() {
   const filtre = document.getElementById('filtre-jour');
   if (filtre) filtre.value = '';
   renderJournalActivite(_activiteComplete);
+}
+
+/* ════════════════════════════════════════════
+   MON PROFIL — carte dédiée dans Administration.html
+   (la directrice ne quitte jamais cette page)
+════════════════════════════════════════════ */
+function remplirProfilAdmin(u) {
+  if (!u) return;
+
+  const initiales = ((u.nom?.[0] || '') + (u.prenoms?.[0] || '')).toUpperCase();
+  const avatarEl = document.getElementById('profil-avatar-big');
+  if (avatarEl) {
+    if (u.photo) {
+      avatarEl.innerHTML = `<img src="${u.photo}" alt="Photo de profil"
+        style="width:100%;height:100%;object-fit:cover"/>`;
+    } else {
+      avatarEl.textContent = initiales || '?';
+    }
+  }
+
+  const setVal = (id, val) => {
+    const el = document.getElementById(id);
+    if (el) el.value = val || '';
+  };
+  setVal('admin-input-nom', u.nom);
+  setVal('admin-input-prenoms', u.prenoms);
+  setVal('admin-input-tel', u.telephone);
+}
+
+async function enregistrerProfilAdmin() {
+  if (!_adminUser?.id) return;
+
+  const nom     = document.getElementById('admin-input-nom')?.value.trim();
+  const prenoms = document.getElementById('admin-input-prenoms')?.value.trim();
+  const tel     = document.getElementById('admin-input-tel')?.value.trim();
+  const msgEl   = document.getElementById('profil-admin-msg');
+
+  const message = (txt, ok) => {
+    if (msgEl) {
+      msgEl.textContent = txt;
+      msgEl.style.color = ok ? '#16A34A' : '#DC2626';
+      setTimeout(() => { msgEl.textContent = ''; }, 5000);
+    }
+  };
+
+  if (!nom || !prenoms) {
+    message('⚠️ Nom et prénoms sont obligatoires.', false);
+    return;
+  }
+
+  const payload = { nom, prenoms };
+  if (tel) payload.telephone = tel;
+
+  try {
+    const res = await fetch(`${API_URL}/utilisateurs/${_adminUser.id}`, {
+      method : 'PUT',
+      headers: _authHeaders(),
+      body   : JSON.stringify(payload),
+    });
+    const data = await res.json();
+
+    if (res.ok) {
+      _adminUser = { ..._adminUser, ...payload };
+      localStorage.setItem('utilisateur', JSON.stringify(_adminUser));
+      remplirProfilAdmin(_adminUser);
+      if (typeof afficherUtilisateur === 'function') afficherUtilisateur();
+      message('✅ Profil mis à jour.', true);
+    } else {
+      message('❌ ' + (data.detail || 'Erreur lors de la modification.'), false);
+    }
+  } catch {
+    message('❌ Serveur inaccessible.', false);
+  }
+}
+
+function changerPhotoAdmin(input) {
+  const file = input.files && input.files[0];
+  if (!file) return;
+
+  const msgEl = document.getElementById('profil-admin-msg');
+  const message = (txt, ok) => {
+    if (msgEl) {
+      msgEl.textContent = txt;
+      msgEl.style.color = ok ? '#16A34A' : '#DC2626';
+      setTimeout(() => { msgEl.textContent = ''; }, 5000);
+    }
+  };
+
+  if (!file.type.startsWith('image/')) {
+    message('⚠️ Veuillez choisir une image.', false);
+    return;
+  }
+
+  const reader = new FileReader();
+  reader.onload = e => {
+    const img = new Image();
+    img.onload = async () => {
+      // Recadrage carré centré + redimensionnement à 256px, pour rester léger
+      const TAILLE = 256;
+      const canvas = document.createElement('canvas');
+      canvas.width = canvas.height = TAILLE;
+      const ctx  = canvas.getContext('2d');
+      const cote = Math.min(img.width, img.height);
+      const sx   = (img.width  - cote) / 2;
+      const sy   = (img.height - cote) / 2;
+      ctx.drawImage(img, sx, sy, cote, cote, 0, 0, TAILLE, TAILLE);
+      const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
+
+      try {
+        const res = await fetch(`${API_URL}/utilisateurs/${_adminUser.id}`, {
+          method : 'PUT',
+          headers: _authHeaders(),
+          body   : JSON.stringify({ photo: dataUrl }),
+        });
+        const data = await res.json();
+        if (res.ok) {
+          _adminUser.photo = dataUrl;
+          localStorage.setItem('utilisateur', JSON.stringify(_adminUser));
+          remplirProfilAdmin(_adminUser);
+          if (typeof afficherUtilisateur === 'function') afficherUtilisateur();
+          message('✅ Photo mise à jour.', true);
+        } else {
+          message('❌ ' + (data.detail || 'Erreur lors de la mise à jour.'), false);
+        }
+      } catch {
+        message('❌ Serveur inaccessible.', false);
+      }
+    };
+    img.src = e.target.result;
+  };
+  reader.readAsDataURL(file);
+  input.value = '';
 }

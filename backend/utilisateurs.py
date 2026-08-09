@@ -120,7 +120,7 @@ def _creer_et_envoyer_invitation(nom: str, prenoms: str, email: str, role: str):
             sujet        = "[DSFD] Activez votre compte administrateur",
             corps_html   = f"""
             <div style="font-family:Arial,sans-serif;max-width:520px;margin:0 auto">
-              <h2 style="color:#1A2233">Bonjour Madame,</h2>
+              <h2 style="color:#1A2233">Bonjour Monsieur/Madame,</h2>
               <p style="color:#475569;font-size:14px;line-height:1.6">
                 Un compte administrateur a été créé pour vous sur la plateforme DSFD.
                 Cliquez sur le bouton ci-dessous pour choisir votre mot de passe et

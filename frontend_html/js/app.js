@@ -37,7 +37,7 @@ async function requireAuth() {
   const user  = _lireUtilisateurLocal(null);
 
   if (!token || !user) {
-    window.location.href = "index.html";
+    window.location.href = "/index.html";
     return;
   }
 
@@ -60,7 +60,7 @@ async function requireAuth() {
   } catch {
     localStorage.removeItem("utilisateur");
     localStorage.removeItem("token");
-    window.location.href = "index.html";
+    window.location.href = "/index.html";
   }
 }
 
@@ -106,9 +106,16 @@ function afficherUtilisateur() {
 // immédiatement vers Administration.html.
 function verrouillerAccesDirecteur(user) {
   if (user.role !== "directeur") return;
-  const page = (window.location.pathname.split("/").pop() || "").toLowerCase();
-  if (page === "administration.html" || page === "index.html" || page === "") return;
-  window.location.href = "Administration.html";
+  // FIX : Netlify peut servir les pages via une URL "propre", sans
+  // l'extension .html (ex. /Administration.html -> /administration).
+  // On compare donc le nom de page SANS extension et en minuscules,
+  // pour reconnaître la page quelle que soit la forme d'URL utilisée —
+  // sinon ce contrôle se redéclenchait en boucle et coupait la requête
+  // /auth/me en plein vol, ce qui renvoyait à tort vers la connexion.
+  let page = (window.location.pathname.split("/").pop() || "").toLowerCase();
+  page = page.replace(/\.html$/, "");
+  if (page === "administration" || page === "index" || page === "") return;
+  window.location.href = "/Administration.html";
 }
 
 /* ════════════════════════════════════════════
@@ -126,7 +133,7 @@ function estChefMission() {
 function logout() {
   localStorage.removeItem("utilisateur");
   localStorage.removeItem("token");
-  window.location.href = "index.html";
+  window.location.href = "/index.html";
 }
 
 function toggleSidebar() {
@@ -179,7 +186,7 @@ if (signupForm) {
       if (response.ok) {
         message.style.color = "green";
         message.textContent = "✅ Inscription réussie ! Redirection...";
-        setTimeout(() => { window.location.href = "index.html"; }, 1500);
+        setTimeout(() => { window.location.href = "/index.html"; }, 1500);
       } else {
         message.style.color = "red";
         message.textContent = "❌ " + resultat.detail;
@@ -223,7 +230,7 @@ if (loginForm) {
         // FIX : le rôle "directeur" est redirigé directement vers son
         // interface dédiée, jamais vers le dashboard des inspecteurs.
         const destination = resultat.utilisateur?.role === "directeur"
-          ? "Administration.html" : "dashboard.html";
+          ? "/Administration.html" : "/dashboard.html";
         setTimeout(() => { window.location.href = destination; }, 1500);
       } else {
         message.style.color = "red";
@@ -359,7 +366,7 @@ function filterMissions() {
    MISSIONS — actions
 ════════════════════════════════════════════ */
 function voirMission(id) {
-  window.location.href = `nouvelle_mission.html?id=${id}`;
+  window.location.href = `/nouvelle_mission.html?id=${id}`;
 }
 
 async function modifierStatut(id) {
