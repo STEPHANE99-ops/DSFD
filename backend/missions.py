@@ -103,24 +103,129 @@ import json
 
 import resend
 
+# FIX : adresse d'expédition configurable. Par défaut, "onboarding@resend.dev"
+# — l'adresse de test fournie par Resend, qui ne peut envoyer QU'À l'adresse
+# du propriétaire du compte Resend (tout autre destinataire est refusé tant
+# qu'aucun domaine n'est vérifié). Une fois un domaine vérifié sur
+# resend.com/domains, définir RESEND_FROM_EMAIL sur Render (ex. "DSFD
+# <notifications@dsfd.ci>") : les emails partiront alors vers n'importe quel
+# destinataire, sans autre changement de code.
+RESEND_FROM_EMAIL = os.environ.get("RESEND_FROM_EMAIL", "DSFD <onboarding@resend.dev>")
+
+# FIX : solution sans domaine à vérifier — envoi via un compte Gmail
+# personnel (SMTP + mot de passe d'application), utile en phase de test
+# tant qu'aucun nom de domaine n'a été acheté. Contrairement à Resend en
+# mode test, Gmail envoie vers n'importe quel destinataire dès l'origine.
+# Pour l'activer : définir GMAIL_ADDRESS et GMAIL_APP_PASSWORD sur Render
+# (voir la marche à suivre ci-dessous) — dès que ces deux variables sont
+# présentes, _envoyer_email() passe automatiquement par Gmail au lieu de
+# Resend, sans aucun autre changement de code.
+#
+# Marche à suivre pour obtenir un mot de passe d'application Gmail :
+#   1. Compte Google → Sécurité → activer la validation en 2 étapes
+#      (obligatoire, sinon l'étape suivante n'apparaît pas)
+#   2. Compte Google → Sécurité → Mots de passe des applications
+#      → générer un mot de passe pour "Mail" / "Autre"
+#   3. Copier le code à 16 caractères obtenu (jamais le mot de passe
+#      normal du compte) dans GMAIL_APP_PASSWORD sur Render
+GMAIL_ADDRESS      = os.environ.get("GMAIL_ADDRESS", "")
+GMAIL_APP_PASSWORD = os.environ.get("GMAIL_APP_PASSWORD", "")
+
+# FIX : option Brevo (ex-Sendinblue) — plan gratuit à vie, 300 emails/jour,
+# sans domaine à vérifier pour envoyer vers n'importe quel destinataire
+# (contrairement au mode test de Resend). Sans domaine authentifié côté
+# Brevo, l'email part depuis une adresse générique à eux plutôt que la
+# vôtre, avec une délivrabilité un peu réduite — largement suffisant pour
+# une phase de test. Pour l'activer : créer un compte gratuit sur
+# brevo.com, récupérer la clé API (Paramètres → Clés API → SMTP & API),
+# puis définir BREVO_API_KEY sur Render.
+BREVO_API_KEY = os.environ.get("BREVO_API_KEY", "")
+BREVO_FROM_EMAIL = os.environ.get("BREVO_FROM_EMAIL", "dsfd@example.com")
+
+
+def _envoyer_email_brevo(destinataire: str, sujet: str, corps_html: str):
+    """Envoi via l'API transactionnelle de Brevo (REST, pas de dépendance
+    supplémentaire : utilise urllib, déjà importé dans ce fichier)."""
+    payload = json.dumps({
+        "sender":      {"name": "DSFD", "email": BREVO_FROM_EMAIL},
+        "to":          [{"email": destinataire}],
+        "subject":     sujet,
+        "htmlContent": corps_html,
+    }).encode("utf-8")
+
+    requete = urllib.request.Request(
+        "https://api.brevo.com/v3/smtp/email",
+        data=payload,
+        method="POST",
+        headers={
+            "api-key":       BREVO_API_KEY,
+            "Content-Type":  "application/json",
+            "Accept":        "application/json",
+        },
+    )
+    with urllib.request.urlopen(requete, timeout=15) as reponse:
+        reponse.read()  # consomme la réponse ; lève une exception si le statut n'est pas 2xx
+
+
+def _envoyer_email_gmail(destinataire: str, sujet: str, corps_html: str):
+    """Envoi via le SMTP de Gmail — pas de domaine à vérifier, mais soumis
+    aux limites d'envoi d'un compte Gmail normal (environ 500 emails/jour),
+    largement suffisant en phase de test."""
+    msg = MIMEMultipart("alternative")
+    msg["From"]    = f"DSFD <{GMAIL_ADDRESS}>"
+    msg["To"]      = destinataire
+    msg["Subject"] = sujet
+    # Repli texte brut minimal, en plus du HTML — meilleure délivrabilité,
+    # certains clients mail affichent ce texte en aperçu.
+    msg.attach(MIMEText("Ouvrez cet email avec un client compatible HTML pour voir son contenu.", "plain"))
+    msg.attach(MIMEText(corps_html, "html"))
+
+    with smtplib.SMTP_SSL("smtp.gmail.com", 465) as serveur:
+        serveur.login(GMAIL_ADDRESS, GMAIL_APP_PASSWORD)
+        serveur.sendmail(GMAIL_ADDRESS, [destinataire], msg.as_string())
+
+
 def _envoyer_email(destinataire: str, sujet: str, corps_html: str):
+    # FIX : ordre de priorité — Brevo en premier s'il est configuré (le
+    # plus simple : aucun domaine à vérifier, envoie vers n'importe quel
+    # destinataire dès l'origine) ; puis Gmail ; puis Resend en dernier
+    # recours (limité à l'adresse du propriétaire du compte tant qu'aucun
+    # domaine n'y est vérifié).
+    if BREVO_API_KEY:
+        try:
+            _envoyer_email_brevo(destinataire, sujet, corps_html)
+            print(f"✅ Email envoyé à {destinataire} (via Brevo)")
+            return
+        except Exception as e:
+            print(f"❌ Erreur envoi email (Brevo) : {e}")
+            return
+
+    if GMAIL_ADDRESS and GMAIL_APP_PASSWORD:
+        try:
+            _envoyer_email_gmail(destinataire, sujet, corps_html)
+            print(f"✅ Email envoyé à {destinataire} (via Gmail)")
+            return
+        except Exception as e:
+            print(f"❌ Erreur envoi email (Gmail) : {e}")
+            return
+
     RESEND_API_KEY = os.environ.get("RESEND_API_KEY", "")
     if not RESEND_API_KEY:
-        print("⚠️ RESEND_API_KEY non configurée")
+        print("⚠️ Aucun service d'email configuré (ni Brevo, ni Gmail, ni Resend)")
         return
 
     try:
         resend.api_key = RESEND_API_KEY
         params = {
-            "from":    "DSFD <onboarding@resend.dev>",
+            "from":    RESEND_FROM_EMAIL,
             "to":      [destinataire],
             "subject": sujet,
             "html":    corps_html,
         }
         email = resend.Emails.send(params)
-        print(f"✅ Email envoyé à {destinataire}: {email}")
+        print(f"✅ Email envoyé à {destinataire} (via Resend) : {email}")
     except Exception as e:
-        print(f"❌ Erreur envoi email: {e}")
+        print(f"❌ Erreur envoi email (Resend) : {e}")
 
 
 # ── FIX : génération du token d'accès mission ──────────
