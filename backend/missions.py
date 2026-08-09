@@ -140,7 +140,7 @@ GMAIL_APP_PASSWORD = os.environ.get("GMAIL_APP_PASSWORD", "")
 # brevo.com, récupérer la clé API (Paramètres → Clés API → SMTP & API),
 # puis définir BREVO_API_KEY sur Render.
 BREVO_API_KEY = os.environ.get("BREVO_API_KEY", "")
-BREVO_FROM_EMAIL = os.environ.get("BREVO_FROM_EMAIL", "dsfd@example.com")
+BREVO_FROM_EMAIL = os.environ.get("BREVO_FROM_EMAIL", "")
 
 
 def _envoyer_email_brevo(destinataire: str, sujet: str, corps_html: str):
@@ -192,6 +192,17 @@ def _envoyer_email(destinataire: str, sujet: str, corps_html: str):
     # recours (limité à l'adresse du propriétaire du compte tant qu'aucun
     # domaine n'y est vérifié).
     if BREVO_API_KEY:
+        if not BREVO_FROM_EMAIL:
+            # FIX : sans adresse d'expéditeur vérifiée, Brevo transmet quand
+            # même le message, mais Gmail (et la plupart des messageries)
+            # le rejette juste après en voyant une adresse d'expéditeur non
+            # autorisée — c'était le cas avec l'ancienne valeur par défaut
+            # factice ("dsfd@example.com"). Mieux vaut échouer clairement
+            # ici, plutôt qu'un envoi silencieusement voué au rejet.
+            print("⚠️ BREVO_API_KEY configurée mais BREVO_FROM_EMAIL manquante — "
+                  "email non envoyé. Voir Brevo → Senders, Domains & Dedicated IPs "
+                  "pour obtenir une adresse d'expéditeur vérifiée.")
+            return
         try:
             _envoyer_email_brevo(destinataire, sujet, corps_html)
             print(f"✅ Email envoyé à {destinataire} (via Brevo)")
