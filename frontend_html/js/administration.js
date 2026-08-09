@@ -377,3 +377,56 @@ function changerPhotoAdmin(input) {
   reader.readAsDataURL(file);
   input.value = '';
 }
+
+/* ════════════════════════════════════════════
+   CRÉER UN COMPTE UTILISATEUR
+   (remplace l'inscription publique, désactivée)
+════════════════════════════════════════════ */
+async function inviterUtilisateur() {
+  const nom     = document.getElementById('invite-nom')?.value.trim();
+  const prenoms = document.getElementById('invite-prenoms')?.value.trim();
+  const email   = document.getElementById('invite-email')?.value.trim();
+  const role    = document.getElementById('invite-role')?.value;
+  const btn     = document.getElementById('btn-inviter');
+  const msgEl   = document.getElementById('invite-msg');
+
+  const message = (txt, ok) => {
+    if (msgEl) {
+      msgEl.textContent = txt;
+      msgEl.style.color = ok ? '#16A34A' : '#DC2626';
+    }
+  };
+
+  if (!nom || !prenoms || !email || !role) {
+    message('⚠️ Tous les champs sont obligatoires.', false);
+    return;
+  }
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    message('⚠️ Adresse email invalide.', false);
+    return;
+  }
+
+  btn.disabled = true;
+  message('Envoi en cours…', true);
+
+  try {
+    const res = await fetch(`${API_URL}/utilisateurs/inviter`, {
+      method : 'POST',
+      headers: _authHeaders(),
+      body   : JSON.stringify({ nom, prenoms, email, role }),
+    });
+    const data = await res.json();
+
+    if (res.ok) {
+      message('✅ ' + data.message, true);
+      document.getElementById('form-inviter').reset();
+      showToast('Invitation envoyée');
+    } else {
+      message('❌ ' + (data.detail || 'Erreur lors de la création du compte.'), false);
+    }
+  } catch {
+    message('❌ Serveur inaccessible.', false);
+  } finally {
+    btn.disabled = false;
+  }
+}

@@ -97,12 +97,32 @@ def _exiger_directeur(authorization: Optional[str]) -> dict:
     return payload
 
 
-def _creer_et_envoyer_invitation(nom: str, prenoms: str, email: str, role: str):
+# Libellés lisibles du rôle, pour le texte de l'email d'invitation
+LABEL_ROLE_INVITATION = {
+    "inspecteur":   "en tant qu'Inspecteur",
+    "chef_mission": "en tant que Chef de mission",
+    ROLE_DIRECTEUR: "en tant qu'administrateur",
+}
+
+def _creer_et_envoyer_invitation(nom: str, prenoms: str, email: str, role: str, salutation: str = None):
     """FIX : génère un token d'invitation signé (7 jours de validité) et
-    envoie l'email contenant le lien pour définir le mot de passe. Import
-    différé de missions.py pour éviter un import circulaire (missions.py
-    importe déjà des symboles depuis ce module)."""
+    envoie l'email contenant le lien pour définir le mot de passe. Réutilisée
+    pour toute création de compte par la directrice (inspecteur, chef de
+    mission, ou un autre administrateur), pas seulement le bootstrap du tout
+    premier compte directeur. Import différé de missions.py pour éviter un
+    import circulaire (missions.py importe déjà des symboles depuis ce
+    module).
+
+    `salutation` : texte affiché après "Bonjour " dans l'email (ex. "Madame",
+    "Jean"). Par défaut, utilise le prénom réel s'il est disponible et n'est
+    pas le prénom générique du compte de bootstrap.
+    """
     from missions import _envoyer_email, FRONTEND_URL
+
+    if salutation is None:
+        salutation = prenoms if prenoms and prenoms != "DSFD" else ""
+    entete = f"Bonjour {salutation}," if salutation else "Bonjour,"
+    contexte_role = LABEL_ROLE_INVITATION.get(role, "sur la plateforme DSFD")
 
     payload = {
         "email": email,
@@ -117,12 +137,12 @@ def _creer_et_envoyer_invitation(nom: str, prenoms: str, email: str, role: str):
     try:
         _envoyer_email(
             destinataire = email,
-            sujet        = "[DSFD] Activez votre compte administrateur",
+            sujet        = "[DSFD] Activez votre compte",
             corps_html   = f"""
             <div style="font-family:Arial,sans-serif;max-width:520px;margin:0 auto">
-              <h2 style="color:#1A2233">Bonjour Monsieur/Madame,</h2>
+              <h2 style="color:#1A2233">{entete}</h2>
               <p style="color:#475569;font-size:14px;line-height:1.6">
-                Un compte administrateur a été créé pour vous sur la plateforme DSFD.
+                Un compte a été créé pour vous sur la plateforme DSFD {contexte_role}.
                 Cliquez sur le bouton ci-dessous pour choisir votre mot de passe et
                 accéder à votre interface.
               </p>
@@ -235,6 +255,15 @@ class DefinirMotDePasseModel(BaseModel):
 # ── Inscription ───────────────────────────────────────────
 @router.post("/inscription", status_code=201)
 def inscription(data: InscriptionModel):
+    # FIX : inscriptions publiques désactivées — seule la directrice peut
+    # désormais créer des comptes (voir POST /utilisateurs/inviter, réservée
+    # au rôle directeur). Le code ci-dessous est laissé en place mais rendu
+    # inaccessible, pour pouvoir être réactivé facilement si ce choix change.
+    raise HTTPException(
+        403,
+        "Les inscriptions publiques sont désactivées. Contactez l'administration "
+        "pour obtenir un accès à la plateforme."
+    )
 
     existing = (
         supabase.table("utilisateurs")
@@ -275,6 +304,66 @@ def inscription(data: InscriptionModel):
     }
 
 
+class InvitationUtilisateurModel(BaseModel):
+    """FIX : création de compte par la directrice — remplace l'inscription
+    publique. Le rôle reste limité à inspecteur/chef_mission (un compte
+    directeur se crée uniquement via EMAILS_DIRECTEURS, jamais depuis
+    cette route, pour garder ce niveau d'accès sous contrôle infra)."""
+    nom:     str
+    prenoms: str
+    email:   EmailStr
+    role:    str
+
+    @field_validator("role")
+    @classmethod
+    def role_valide(cls, v):
+        if v not in ROLES_VALIDES:
+            raise ValueError(f"Rôle invalide. Valeurs autorisées : {ROLES_VALIDES}")
+        return v
+
+
+@router.post("/utilisateurs/inviter", status_code=201)
+def inviter_utilisateur(data: InvitationUtilisateurModel, authorization: str = Header(None)):
+    _exiger_directeur(authorization)
+
+    email_normalise = data.email.strip().lower()
+    existing = supabase.table("utilisateurs").select("id, statut_compte").eq("email", email_normalise).execute()
+
+    if existing.data:
+        # Compte déjà créé mais jamais activé : on renvoie simplement un
+        # nouveau lien plutôt que d'échouer.
+        if existing.data[0].get("statut_compte") == STATUT_INVITE:
+            _creer_et_envoyer_invitation(data.nom, data.prenoms, email_normalise, data.role)
+            return {"message": "✅ Un nouveau lien d'invitation a été envoyé (compte déjà créé, pas encore activé)."}
+        raise HTTPException(409, f"Un compte existe déjà avec l'email '{email_normalise}'.")
+
+    creation = (
+        supabase.table("utilisateurs")
+        .insert({
+            "nom":           data.nom,
+            "prenoms":       data.prenoms,
+            "role":          data.role,
+            "email":         email_normalise,
+            "mot_de_passe":  pwd_context.hash(secrets.token_hex(32)),  # inutilisable, voir _creer_et_envoyer_invitation
+            "statut_compte": STATUT_INVITE,
+        })
+        .execute()
+    )
+    u = creation.data[0]
+    _creer_et_envoyer_invitation(u["nom"], u["prenoms"], u["email"], u["role"])
+
+    return {
+        "message":     "✅ Compte créé. Un email d'invitation a été envoyé pour définir le mot de passe.",
+        "utilisateur": {
+            "id":      u["id"],
+            "nom":     u["nom"],
+            "prenoms": u["prenoms"],
+            "role":    u["role"],
+            "email":   u["email"],
+        }
+    }
+
+
 # ── Connexion ─────────────────────────────────────────────
 @router.post("/connexion")
 def connexion(data: ConnexionModel):
@@ -309,7 +398,7 @@ def connexion(data: ConnexionModel):
             .execute()
         )
         u = creation.data[0]
-        _creer_et_envoyer_invitation(u["nom"], u["prenoms"], u["email"], ROLE_DIRECTEUR)
+        _creer_et_envoyer_invitation(u["nom"], u["prenoms"], u["email"], ROLE_DIRECTEUR, salutation="Madame")
         raise HTTPException(
             403,
             "Un email vous a été envoyé pour activer votre compte et choisir "
@@ -325,7 +414,7 @@ def connexion(data: ConnexionModel):
     # on renvoie un nouveau lien plutôt que d'échouer sur "mot de passe
     # incorrect" (le mot de passe stocké est de toute façon inutilisable).
     if u.get("statut_compte") == STATUT_INVITE:
-        _creer_et_envoyer_invitation(u.get("nom"), u.get("prenoms"), u["email"], u.get("role") or ROLE_DIRECTEUR)
+        _creer_et_envoyer_invitation(u.get("nom"), u.get("prenoms"), u["email"], u.get("role") or ROLE_DIRECTEUR, salutation="Madame" if (u.get("role") or ROLE_DIRECTEUR) == ROLE_DIRECTEUR else None)
         raise HTTPException(
             403,
             "Votre compte n'est pas encore activé. Un nouveau lien pour "
