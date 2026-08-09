@@ -58,10 +58,10 @@
       <div class="kpi-grid">
         <div class="kpi-card">
           <div class="kpi-card-top">
-            <div class="kpi-icon" style="background:#FFF7ED;color:#F97316"><i class="fas fa-user-clock"></i></div>
-            <div class="kpi-label">Comptes en attente</div>
+            <div class="kpi-icon" style="background:#FFF7ED;color:#F97316"><i class="fas fa-user-check"></i></div>
+            <div class="kpi-label">Comptes actifs</div>
           </div>
-          <div class="kpi-val" id="kpi-en-attente">—</div>
+          <div class="kpi-val" id="kpi-comptes-actifs">—</div>
         </div>
         <div class="kpi-card">
           <div class="kpi-card-top">
@@ -82,21 +82,24 @@
       <!-- 2) Gestion des comptes : les deux actions côte à côte -->
       <div class="admin-2col">
 
-        <!-- Inscriptions en attente -->
+        <!-- Comptes utilisateurs -->
         <div class="card-box">
-          <h3 class="section-title"><i class="fas fa-user-clock"></i> Inscriptions en attente</h3>
+          <h3 class="section-title"><i class="fas fa-address-book"></i> Comptes utilisateurs</h3>
+          <p style="font-size:12px;color:var(--text-muted);margin:8px 0 0">
+            Tous les comptes ayant accès à la plateforme.
+          </p>
           <div style="overflow-x:auto;margin-top:12px">
-            <table class="admin-table" id="tbl-en-attente">
+            <table class="admin-table" id="tbl-comptes">
               <thead>
                 <tr>
                   <th>Nom</th>
                   <th>Email</th>
                   <th>Rôle</th>
-                  <th>Demande</th>
-                  <th style="width:190px">Actions</th>
+                  <th>Statut</th>
+                  <th style="width:130px">Actions</th>
                 </tr>
               </thead>
-              <tbody id="tbody-en-attente">
+              <tbody id="tbody-comptes">
                 <tr><td colspan="5" class="admin-empty">Chargement…</td></tr>
               </tbody>
             </table>

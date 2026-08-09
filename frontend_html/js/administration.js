@@ -7,6 +7,7 @@
 
 let _activiteComplete = []; // liste brute reçue du backend, avant filtre jour
 let _adminUser = null;      // profil de la directrice, pour la carte "Mon profil"
+let _dernierLienInvitation = null; // lien de la dernière invitation créée, pour le bouton "Copier"
 
 document.addEventListener('DOMContentLoaded', async () => {
   if (typeof requireAuth === 'function') await requireAuth();
@@ -26,7 +27,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   remplirProfilAdmin(_adminUser);
 
   await Promise.all([
-    chargerInscriptionsEnAttente(),
+    chargerComptesUtilisateurs(),
     chargerJournalActivite(),
   ]);
 
@@ -75,44 +76,67 @@ function _formatDateHeure(iso) {
 }
 
 /* ════════════════════════════════════════════
-   INSCRIPTIONS EN ATTENTE
+   COMPTES UTILISATEURS — liste complète + gestion des accès
 ════════════════════════════════════════════ */
-const LABEL_ROLE_DEMANDE = { inspecteur: 'Inspecteur', chef_mission: 'Chef de mission' };
+const LABEL_ROLE_COMPTE = { inspecteur: 'Inspecteur', chef_mission: 'Chef de mission', directeur: 'Directeur' };
 
-async function chargerInscriptionsEnAttente() {
-  const tbody = document.getElementById('tbody-en-attente');
+const BADGE_STATUT = {
+  approuve:   { texte: 'Actif',        classe: 'actif' },
+  invite:     { texte: 'Invité',       classe: 'invite' },
+  en_attente: { texte: 'En attente',   classe: 'attente' },
+  rejete:     { texte: 'Rejeté',       classe: 'rejete' },
+  desactive:  { texte: 'Désactivé',    classe: 'desactive' },
+};
+
+async function chargerComptesUtilisateurs() {
+  const tbody = document.getElementById('tbody-comptes');
   try {
-    const res = await fetch(`${API_URL}/utilisateurs/admin/en-attente`, {
+    const res = await fetch(`${API_URL}/utilisateurs/admin/tous`, {
       headers: _authHeaders()
     });
     if (!res.ok) throw new Error();
     const data = await res.json();
     const liste = data.utilisateurs || [];
 
-    const kpiEl = document.getElementById('kpi-en-attente');
-    if (kpiEl) kpiEl.textContent = liste.length;
+    const actifs = liste.filter(u => (u.statut_compte || 'approuve') === 'approuve').length;
+    const kpiEl = document.getElementById('kpi-comptes-actifs');
+    if (kpiEl) kpiEl.textContent = actifs;
 
     if (!liste.length) {
-      tbody.innerHTML = `<tr><td colspan="5" class="admin-empty">Aucune inscription en attente.</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="5" class="admin-empty">Aucun compte.</td></tr>`;
       return;
     }
 
+    // Le compte actuellement connecté ne doit pas pouvoir se désactiver
+    const monId = _adminUser?.id;
+
     tbody.innerHTML = liste.map(u => {
-      const { date } = _formatDateHeure(u.created_at);
+      const statut = u.statut_compte || 'approuve';
+      const badge = BADGE_STATUT[statut] || { texte: statut, classe: 'attente' };
+      const estMoi = String(u.id) === String(monId);
+
+      let actionsHTML = '';
+      if (estMoi) {
+        actionsHTML = `<span style="font-size:11.5px;color:var(--text-muted)">— vous —</span>`;
+      } else if (statut === 'desactive') {
+        actionsHTML = `<button class="btn-approuver" onclick="reactiverCompte(${u.id})">
+                          <i class="fas fa-rotate-left"></i> Réactiver
+                        </button>`;
+      } else if (statut === 'approuve') {
+        actionsHTML = `<button class="btn-rejeter-compte" onclick="desactiverCompte(${u.id})">
+                          <i class="fas fa-ban"></i> Désactiver
+                        </button>`;
+      } else {
+        actionsHTML = `<span style="font-size:11.5px;color:var(--text-muted)">—</span>`;
+      }
+
       return `
         <tr id="row-user-${u.id}">
           <td style="font-weight:700">${u.nom || ''} ${u.prenoms || ''}</td>
           <td>${u.email || ''}</td>
-          <td>${LABEL_ROLE_DEMANDE[u.role] || u.role || '—'}</td>
-          <td>${date}</td>
-          <td>
-            <button class="btn-approuver" onclick="approuverCompte(${u.id})">
-              <i class="fas fa-check"></i> Approuver
-            </button>
-            <button class="btn-rejeter-compte" onclick="rejeterCompte(${u.id})">
-              <i class="fas fa-times"></i> Rejeter
-            </button>
-          </td>
+          <td>${LABEL_ROLE_COMPTE[u.role] || u.role || '—'}</td>
+          <td><span class="badge-statut ${badge.classe}">${badge.texte}</span></td>
+          <td>${actionsHTML}</td>
         </tr>`;
     }).join('');
   } catch {
@@ -120,24 +144,20 @@ async function chargerInscriptionsEnAttente() {
   }
 }
 
-async function approuverCompte(id) {
+async function desactiverCompte(id) {
+  if (!confirm('Désactiver l\'accès de ce compte ? La personne ne pourra plus se connecter.')) return;
+
   const row = document.getElementById(`row-user-${id}`);
   row?.querySelectorAll('button').forEach(b => b.disabled = true);
   try {
-    const res = await fetch(`${API_URL}/utilisateurs/${id}/approuver`, {
+    const res = await fetch(`${API_URL}/utilisateurs/${id}/desactiver`, {
       method : 'POST',
       headers: _authHeaders(),
     });
     const data = await res.json();
     if (res.ok) {
-      showToast('✅ Compte approuvé');
-      row?.remove();
-      const kpiEl = document.getElementById('kpi-en-attente');
-      if (kpiEl) kpiEl.textContent = Math.max(0, (parseInt(kpiEl.textContent) || 1) - 1);
-      if (!document.querySelectorAll('#tbody-en-attente tr').length) {
-        document.getElementById('tbody-en-attente').innerHTML =
-          `<tr><td colspan="5" class="admin-empty">Aucune inscription en attente.</td></tr>`;
-      }
+      showToast('Accès désactivé');
+      chargerComptesUtilisateurs();
     } else {
       showToast('❌ ' + (data.detail || 'Erreur.'));
       row?.querySelectorAll('button').forEach(b => b.disabled = false);
@@ -148,26 +168,18 @@ async function approuverCompte(id) {
   }
 }
 
-async function rejeterCompte(id) {
-  if (!confirm('Rejeter cette demande d\'inscription ? La personne ne pourra pas se connecter.')) return;
-
+async function reactiverCompte(id) {
   const row = document.getElementById(`row-user-${id}`);
   row?.querySelectorAll('button').forEach(b => b.disabled = true);
   try {
-    const res = await fetch(`${API_URL}/utilisateurs/${id}/rejeter`, {
+    const res = await fetch(`${API_URL}/utilisateurs/${id}/reactiver`, {
       method : 'POST',
       headers: _authHeaders(),
     });
     const data = await res.json();
     if (res.ok) {
-      showToast('Compte rejeté');
-      row?.remove();
-      const kpiEl = document.getElementById('kpi-en-attente');
-      if (kpiEl) kpiEl.textContent = Math.max(0, (parseInt(kpiEl.textContent) || 1) - 1);
-      if (!document.querySelectorAll('#tbody-en-attente tr').length) {
-        document.getElementById('tbody-en-attente').innerHTML =
-          `<tr><td colspan="5" class="admin-empty">Aucune inscription en attente.</td></tr>`;
-      }
+      showToast('✅ Accès réactivé');
+      chargerComptesUtilisateurs();
     } else {
       showToast('❌ ' + (data.detail || 'Erreur.'));
       row?.querySelectorAll('button').forEach(b => b.disabled = false);
@@ -441,9 +453,24 @@ async function inviterUtilisateur() {
     const data = await res.json();
 
     if (res.ok) {
-      message('✅ ' + data.message, true);
+      _dernierLienInvitation = data.lien_invitation || null;
       document.getElementById('form-inviter').reset();
-      showToast('Invitation envoyée');
+      showToast('Invitation créée');
+      chargerComptesUtilisateurs();
+
+      if (msgEl) {
+        if (_dernierLienInvitation) {
+          // FIX : le lien est toujours affiché avec un bouton "Copier" — la
+          // directrice peut le transmettre elle-même (WhatsApp, SMS…) tant
+          // que l'envoi automatique d'email est limité (mode test Resend,
+          // pas encore de domaine vérifié), et ça reste utile ensuite comme
+          // solution de secours si l'email échoue ponctuellement.
+          msgEl.innerHTML = `✅ ${data.message} <button type="button" class="btn-secondary" style="margin-left:8px;padding:4px 10px" onclick="copierLienInvitation()"><i class="fas fa-copy"></i> Copier le lien</button>`;
+          msgEl.style.color = '#16A34A';
+        } else {
+          message('✅ ' + data.message, true);
+        }
+      }
     } else {
       message('❌ ' + (data.detail || 'Erreur lors de la création du compte.'), false);
     }
@@ -452,4 +479,15 @@ async function inviterUtilisateur() {
   } finally {
     btn.disabled = false;
   }
+}
+
+function copierLienInvitation() {
+  if (!_dernierLienInvitation) return;
+  navigator.clipboard.writeText(_dernierLienInvitation).then(() => {
+    showToast('Lien copié dans le presse-papiers');
+  }).catch(() => {
+    // Repli si l'API presse-papiers est indisponible (ancien navigateur,
+    // contexte non sécurisé) : affiche le lien pour copie manuelle.
+    prompt('Copiez ce lien :', _dernierLienInvitation);
+  });
 }

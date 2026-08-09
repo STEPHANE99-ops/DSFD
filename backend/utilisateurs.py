@@ -29,6 +29,18 @@ STATUT_REJETE     = "rejete"
 # que la personne choisisse elle-même son mot de passe via le lien reçu
 # par email. Ne peut pas se connecter tant que ce n'est pas fait.
 STATUT_INVITE     = "invite"
+# FIX : compte désactivé par la directrice (accès révoqué manuellement,
+# ex. personne ayant quitté l'institution) — distinct de "rejete" qui
+# désigne un refus d'inscription, pas une révocation d'un accès déjà actif.
+STATUT_DESACTIVE  = "desactive"
+
+
+def _sans_mot_de_passe(u: dict) -> dict:
+    """FIX : ne jamais renvoyer le hash du mot de passe au frontend, même
+    indirectement via un select("*")."""
+    u = dict(u)
+    u.pop("mot_de_passe", None)
+    return u
 
 # ── FIX : bootstrap du/des compte(s) directeur — sans jamais toucher à
 # la base de données à la main. La liste des emails autorisés à devenir
@@ -116,6 +128,12 @@ def _creer_et_envoyer_invitation(nom: str, prenoms: str, email: str, role: str, 
     `salutation` : texte affiché après "Bonjour " dans l'email (ex. "Madame",
     "Jean"). Par défaut, utilise le prénom réel s'il est disponible et n'est
     pas le prénom générique du compte de bootstrap.
+
+    Retourne le lien d'invitation généré — utile pour l'afficher comme
+    solution de secours dans l'interface (copier/partager manuellement)
+    quand l'envoi d'email échoue, par exemple tant qu'aucun domaine n'est
+    vérifié sur Resend (mode test : Resend ne livre qu'à l'adresse du
+    propriétaire du compte).
     """
     from missions import _envoyer_email, FRONTEND_URL
 
@@ -160,6 +178,8 @@ def _creer_et_envoyer_invitation(nom: str, prenoms: str, email: str, role: str, 
         )
     except Exception as e:
         print(f"⚠️ Email d'invitation non envoyé à {email} : {e}")
+
+    return lien
 
 
 def decoder_token(token: str) -> dict:
@@ -333,8 +353,11 @@ def inviter_utilisateur(data: InvitationUtilisateurModel, authorization: str = H
         # Compte déjà créé mais jamais activé : on renvoie simplement un
         # nouveau lien plutôt que d'échouer.
         if existing.data[0].get("statut_compte") == STATUT_INVITE:
-            _creer_et_envoyer_invitation(data.nom, data.prenoms, email_normalise, data.role)
-            return {"message": "✅ Un nouveau lien d'invitation a été envoyé (compte déjà créé, pas encore activé)."}
+            lien = _creer_et_envoyer_invitation(data.nom, data.prenoms, email_normalise, data.role)
+            return {
+                "message": "✅ Un nouveau lien d'invitation a été généré (compte déjà créé, pas encore activé).",
+                "lien_invitation": lien,
+            }
         raise HTTPException(409, f"Un compte existe déjà avec l'email '{email_normalise}'.")
 
     creation = (
@@ -350,10 +373,15 @@ def inviter_utilisateur(data: InvitationUtilisateurModel, authorization: str = H
         .execute()
     )
     u = creation.data[0]
-    _creer_et_envoyer_invitation(u["nom"], u["prenoms"], u["email"], u["role"])
+    lien = _creer_et_envoyer_invitation(u["nom"], u["prenoms"], u["email"], u["role"])
 
     return {
         "message":     "✅ Compte créé. Un email d'invitation a été envoyé pour définir le mot de passe.",
+        # FIX : le lien est toujours renvoyé ici (route réservée à la
+        # directrice) — utile en solution de secours si l'email échoue
+        # (ex. domaine Resend pas encore vérifié), pour le transmettre
+        # manuellement (WhatsApp, SMS…).
+        "lien_invitation": lien,
         "utilisateur": {
             "id":      u["id"],
             "nom":     u["nom"],
@@ -456,6 +484,12 @@ def connexion(data: ConnexionModel):
             403,
             "Votre demande d'inscription n'a pas été approuvée. "
             "Contactez l'administration pour plus d'informations."
+        )
+    if statut == STATUT_DESACTIVE:
+        raise HTTPException(
+            403,
+            "Votre compte a été désactivé. Contactez l'administration "
+            "pour plus d'informations."
         )
 
     utilisateur_public = {
@@ -616,7 +650,53 @@ def utilisateurs_en_attente(authorization: str = Header(None)):
         .eq("statut_compte", STATUT_EN_ATTENTE)
         .execute()
     )
-    return {"total": len(res.data), "utilisateurs": res.data}
+    return {"total": len(res.data), "utilisateurs": [_sans_mot_de_passe(u) for u in res.data]}
+
+
+# ── Liste de tous les comptes (gestion des accès) ─────────
+@router.get("/utilisateurs/admin/tous")
+def tous_les_comptes(authorization: str = Header(None)):
+    _exiger_directeur(authorization)
+    res = supabase.table("utilisateurs").select("*").execute()
+    return {"total": len(res.data), "utilisateurs": [_sans_mot_de_passe(u) for u in res.data]}
+
+
+# ── Désactiver / réactiver un compte ──────────────────────
+@router.post("/utilisateurs/{id}/desactiver")
+def desactiver_compte(id: int, authorization: str = Header(None)):
+    payload = _exiger_directeur(authorization)
+    if int(payload["sub"]) == id:
+        raise HTTPException(400, "Vous ne pouvez pas désactiver votre propre compte.")
+
+    existing = supabase.table("utilisateurs").select("id").eq("id", id).execute()
+    if not existing.data:
+        raise HTTPException(404, f"Utilisateur #{id} introuvable.")
+
+    res = (
+        supabase.table("utilisateurs")
+        .update({"statut_compte": STATUT_DESACTIVE})
+        .eq("id", id)
+        .execute()
+    )
+    return {"message": "✅ Accès désactivé.", "utilisateur": _sans_mot_de_passe(res.data[0])}
+
+
+@router.post("/utilisateurs/{id}/reactiver")
+def reactiver_compte(id: int, authorization: str = Header(None)):
+    _exiger_directeur(authorization)
+
+    existing = supabase.table("utilisateurs").select("id").eq("id", id).execute()
+    if not existing.data:
+        raise HTTPException(404, f"Utilisateur #{id} introuvable.")
+
+    res = (
+        supabase.table("utilisateurs")
+        .update({"statut_compte": STATUT_APPROUVE})
+        .eq("id", id)
+        .execute()
+    )
+    return {"message": "✅ Accès réactivé.", "utilisateur": _sans_mot_de_passe(res.data[0])}
+
 
 
 # ── Approuver un compte ───────────────────────────────────

@@ -139,6 +139,13 @@
 .badge-statut.valide  { background: #ECFDF5; color: #16A34A; }
 .badge-statut.brouillon { background: #FFF7ED; color: #C2410C; }
 
+/* ── Badges statut de COMPTE (liste des utilisateurs) ── */
+.badge-statut.actif     { background: #ECFDF5; color: #16A34A; }
+.badge-statut.invite    { background: #EFF6FF; color: #3B82F6; }
+.badge-statut.attente   { background: #FFF7ED; color: #C2410C; }
+.badge-statut.rejete    { background: #FEF2F2; color: #DC2626; }
+.badge-statut.desactive { background: #F1F5F9; color: #64748B; }
+
 
 /* ── Toast (repris de nouvelle_mission.css) ── */
 .toast {
