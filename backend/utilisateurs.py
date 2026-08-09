@@ -827,13 +827,31 @@ def modifier_utilisateur(id: int, data: ModificationModel):
 
 # ── Supprimer utilisateur ─────────────────────────────────
 @router.delete("/utilisateurs/{id}")
-def supprimer_utilisateur(id: int):
-    res = (
-        supabase.table("utilisateurs")
-        .delete()
-        .eq("id", id)
-        .execute()
-    )
+def supprimer_utilisateur(id: int, authorization: str = Header(None)):
+    # FIX : cette route n'avait auparavant AUCUNE protection — n'importe
+    # qui, même non connecté, pouvait supprimer n'importe quel compte.
+    payload = _exiger_directeur(authorization)
+    if int(payload["sub"]) == id:
+        raise HTTPException(400, "Vous ne pouvez pas supprimer votre propre compte.")
+
+    try:
+        res = (
+            supabase.table("utilisateurs")
+            .delete()
+            .eq("id", id)
+            .execute()
+        )
+    except Exception:
+        # FIX : la suppression peut échouer si ce compte est référencé
+        # ailleurs (missions créées, volets modifiés…), selon les
+        # contraintes de la base. Message clair plutôt qu'une erreur brute.
+        raise HTTPException(
+            409,
+            "Impossible de supprimer ce compte : il est probablement lié à des "
+            "missions ou volets existants. Désactivez-le plutôt pour révoquer "
+            "son accès sans perdre l'historique."
+        )
+
     if not res.data:
         raise HTTPException(404, f"Utilisateur #{id} introuvable.")
     u = res.data[0]
