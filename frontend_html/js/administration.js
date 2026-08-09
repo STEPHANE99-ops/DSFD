@@ -32,7 +32,30 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   const filtre = document.getElementById('filtre-jour');
   if (filtre) filtre.addEventListener('change', appliquerFiltreJour);
+
+  // FIX : "Mon profil" est désormais une modale ouverte en cliquant sur
+  // l'avatar/le nom en haut à droite, plutôt qu'une carte fixe dans la
+  // page — libère la mise en page principale de la barre du haut.
+  const ouvrirBtn = document.getElementById('btn-ouvrir-profil');
+  if (ouvrirBtn) {
+    ouvrirBtn.addEventListener('click', ouvrirProfilModal);
+    ouvrirBtn.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); ouvrirProfilModal(); }
+    });
+  }
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') fermerProfilModal();
+  });
 });
+
+function ouvrirProfilModal() {
+  remplirProfilAdmin(_adminUser); // resynchronise les champs avant affichage
+  document.getElementById('modal-profil-overlay')?.classList.add('open');
+}
+
+function fermerProfilModal() {
+  document.getElementById('modal-profil-overlay')?.classList.remove('open');
+}
 
 function _authHeaders() {
   return {

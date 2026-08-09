@@ -605,11 +605,15 @@ def changer_mot_de_passe(data: ChangementMotDePasseModel,
 @router.get("/utilisateurs/admin/en-attente")
 def utilisateurs_en_attente(authorization: str = Header(None)):
     _exiger_directeur(authorization)
+    # FIX : select("*") plutôt qu'une liste de colonnes explicite — une
+    # colonne comme "created_at" peut ne pas exister selon la façon dont
+    # la table a été créée, ce qui ferait échouer toute la requête.
+    # Idem pour le tri : on ne peut pas trier de façon fiable sur une
+    # colonne dont on n'est pas certain qu'elle existe.
     res = (
         supabase.table("utilisateurs")
-        .select("id, nom, prenoms, email, role, created_at")
+        .select("*")
         .eq("statut_compte", STATUT_EN_ATTENTE)
-        .order("created_at", desc=False)
         .execute()
     )
     return {"total": len(res.data), "utilisateurs": res.data}

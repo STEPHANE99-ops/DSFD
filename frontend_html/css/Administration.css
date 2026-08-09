@@ -25,6 +25,28 @@
   font-size: 13px;
 }
 
+/* ── KPI enrichis (icône + libellé sur une ligne) ── */
+.kpi-card-top { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+.kpi-icon {
+  width: 34px; height: 34px; border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 14px; flex-shrink: 0;
+}
+.kpi-card .kpi-label { margin-bottom: 0; }
+
+/* ── Section "Gestion des comptes" en deux colonnes, qui se
+      replient en une seule colonne sur petit écran ── */
+.admin-2col {
+  display: grid;
+  grid-template-columns: 1.15fr 1fr;
+  gap: 20px;
+  align-items: start;
+  margin-top: 20px;
+}
+@media (max-width: 980px) {
+  .admin-2col { grid-template-columns: 1fr; }
+}
+
 /* ── Carte "Mon profil" (avatar + champs) ── */
 .admin-avatar-big {
   width: 84px; height: 84px; border-radius: 18px;
@@ -39,15 +61,50 @@
   border-radius: 50%; display: flex; align-items: center; justify-content: center;
   font-size: 12px; cursor: pointer; border: 2px solid #fff;
 }
+.profil-field { margin-bottom: 12px; }
 .profil-field label {
   display: block; font-size: 12px; font-weight: 700;
   color: var(--text-muted); margin-bottom: 5px;
 }
-.profil-field input {
+.profil-field input, .profil-field select {
   width: 100%; padding: 9px 12px;
   border: 1.5px solid var(--border); border-radius: var(--radius-xs);
   font-size: 13.5px; font-family: inherit; color: var(--text-dark);
+  background: var(--white);
 }
+
+/* ── Avatar cliquable en haut à droite (ouvre la modale profil) ── */
+#btn-ouvrir-profil {
+  cursor: pointer; padding: 6px 8px; border-radius: var(--radius-xs);
+  transition: background var(--transition);
+}
+#btn-ouvrir-profil:hover { background: var(--bg); }
+
+/* ── Modale "Mon profil" ── */
+.modal-overlay {
+  display: none; position: fixed; inset: 0; z-index: 1000;
+  background: rgba(15, 23, 42, .45);
+  align-items: center; justify-content: center; padding: 16px;
+}
+.modal-overlay.open { display: flex; }
+.modal-box {
+  background: var(--white); border-radius: var(--radius);
+  width: 100%; max-width: 480px;
+  box-shadow: 0 20px 50px rgba(0,0,0,.25);
+  max-height: 90vh; overflow-y: auto;
+}
+.modal-head {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 18px 22px; border-bottom: 1px solid var(--border);
+}
+.modal-head h3 { margin: 0; font-size: 15.5px; display: flex; align-items: center; gap: 9px; }
+.modal-close {
+  background: none; border: none; cursor: pointer;
+  color: var(--text-muted); font-size: 15px; padding: 6px;
+  border-radius: 8px; transition: background var(--transition);
+}
+.modal-close:hover { background: var(--bg); color: var(--text-dark); }
+.modal-body { padding: 22px; }
 
 /* ── Boutons secondaires (réinitialiser filtre) ── */
 .btn-secondary {
@@ -81,6 +138,7 @@
 }
 .badge-statut.valide  { background: #ECFDF5; color: #16A34A; }
 .badge-statut.brouillon { background: #FFF7ED; color: #C2410C; }
+
 
 /* ── Toast (repris de nouvelle_mission.css) ── */
 .toast {
