@@ -722,7 +722,17 @@ document.addEventListener("DOMContentLoaded", () => {
   afficherUtilisateur();
 
   if (document.getElementById("missions-tbody"))    chargerMissions();
-  if (document.getElementById("rapports-tbody"))    { chargerRapports(); chargerMissionsPourRapport(); }
+  if (document.getElementById("rapports-tbody")) {
+    // FIX : rapports.js (chargé après app.js) redéfinit le chargement de la page.
+    // On utilise ses fonctions si elles existent, sinon les anciennes versions.
+    if (typeof loadMissionsForReport === "function" && typeof loadRapports === "function") {
+      loadRapports();
+      loadMissionsForReport();
+    } else {
+      chargerRapports();
+      chargerMissionsPourRapport();
+    }
+  }
   if (document.getElementById("recos-tbody"))       chargerRecommandations();
   if (document.querySelector(".card .card-value"))  chargerDashboard();
 });

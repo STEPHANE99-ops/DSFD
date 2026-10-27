@@ -25,13 +25,19 @@ async function loadMissionsForReport() {
     const select = document.getElementById("mission-select");
     if (!select) return;
 
+    select.innerHTML = `<option value="">Chargement des missions...</option>`;
+
     try {
         const res = await fetch(`${API_URL}/missions/`);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const data = await res.json();
-        // FIX : mémoriser la liste complète pour pouvoir filtrer par type
+        // mémoriser la liste complète pour pouvoir filtrer par type
         window._missionsRapport = data.missions || [];
         filtrerMissionsSelonType();
-    } catch (e) { console.error(e); }
+    } catch (e) {
+        console.error("❌ Erreur chargement missions :", e);
+        select.innerHTML = `<option value="">⚠️ Impossible de charger les missions</option>`;
+    }
 }
 
 // FIX : le menu "Mission concernée" n'affiche que les missions dont le
@@ -138,6 +144,7 @@ async function loadRapports() {
 
     try {
         const res  = await fetch(`${API_URL}/rapports/`);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const data = await res.json();
 
         tbody.innerHTML = "";
@@ -156,17 +163,15 @@ async function loadRapports() {
                 <td>${r.date_generation ? new Date(r.date_generation).toLocaleDateString("fr-FR") : "—"}</td>
                 <td><span class="format-badge">${(r.format || "").toUpperCase()}</span></td>
                 <td>
-                   <td>
-                      ${r.fichier_url ? `
-                           <button class="btn-icon" onclick="telechargerRapport('${r.fichier_url}', '${r.reference}.${r.format}')" title="Télécharger">
+                    ${r.fichier_url ? `
+                        <button class="btn-icon" onclick="telechargerRapport('${r.fichier_url}', '${r.reference}.${r.format}')" title="Télécharger">
                             <i class="fas fa-download"></i>
-                           </button>` : "—"}
-                      ${r.fichier_url && (!r.statut_validation || r.statut_validation === 'brouillon') ? `
-                          <button class="btn-icon" onclick="soumettreValidation(${r.id}, '${r.reference}')" title="Soumettre pour validation" style="color:#F97316">
-                         <i class="fas fa-paper-plane"></i>
-                         </button>` : ''}
-                         
-                              </td>
+                        </button>` : "—"}
+                    ${r.fichier_url && (!r.statut_validation || r.statut_validation === 'brouillon') ? `
+                        <button class="btn-icon" onclick="soumettreValidation(${r.id}, '${r.reference}')" title="Soumettre pour validation" style="color:#F97316">
+                            <i class="fas fa-paper-plane"></i>
+                        </button>` : ''}
+                </td>
             `;
             tbody.appendChild(tr);
         });
